@@ -40,7 +40,7 @@
 
   
   
-  <link href="/docs/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
 
 
 
@@ -48,21 +48,21 @@
 
 
 
-<link href="/docs/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
 
-<link href="/docs/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
-
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/docs/images/apple-touch-icon-next.png?v=5.1.4">
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
 
 
-  <link rel="icon" type="image/png" sizes="32x32" href="/docs/images/favicon-32x32-next.png?v=5.1.4">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
 
 
-  <link rel="icon" type="image/png" sizes="16x16" href="/docs/images/favicon-16x16-next.png?v=5.1.4">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
 
 
-  <link rel="mask-icon" href="/docs/images/logo.svg?v=5.1.4" color="#222">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
 
 
 
@@ -82,7 +82,7 @@
 <meta name="description" content="为了学习netty，之前花了一段时间读完《NIO与Socket编程技术指南》收获一般，基本就是一些api的翻译，因此本该做一些nio相关的文章总结迟迟没有下手。待后续看到更好的资料或者看完netty后是否有更好的总结。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="netty初识">
-<meta property="og:url" content="http://github.com/cq1228/docs/2019/07/13/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E7%9B%B8%E5%85%B3/netty%E5%88%9D%E8%AF%86/index.html">
+<meta property="og:url" content="https://daodaoplay.cn/2019/07/13/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E7%9B%B8%E5%85%B3/netty%E5%88%9D%E8%AF%86/index.html">
 <meta property="og:site_name" content="刀刀的博客">
 <meta property="og:description" content="为了学习netty，之前花了一段时间读完《NIO与Socket编程技术指南》收获一般，基本就是一些api的翻译，因此本该做一些nio相关的文章总结迟迟没有下手。待后续看到更好的资料或者看完netty后是否有更好的总结。">
 <meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-d9acf971105b8cee.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
@@ -99,7 +99,7 @@
 <script type="text/javascript" id="hexo.configurations">
   var NexT = window.NexT || {};
   var CONFIG = {
-    root: '/docs/',
+    root: '/',
     scheme: 'Mist',
     version: '5.1.4',
     sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
@@ -122,7 +122,7 @@
 
 
 
-  <link rel="canonical" href="http://github.com/cq1228/docs/2019/07/13/网络编程相关/netty初识/"/>
+  <link rel="canonical" href="https://daodaoplay.cn/2019/07/13/网络编程相关/netty初识/"/>
 
 
 
@@ -156,7 +156,7 @@
     
 
     <div class="custom-logo-site-title">
-      <a href="/docs/"  class="brand" rel="start">
+      <a href="/"  class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
         <span class="site-title">刀刀的博客</span>
         <span class="logo-line-after"><i></i></span>
@@ -184,7 +184,7 @@
       
         
         <li class="menu-item menu-item-home">
-          <a href="/docs/" rel="section">
+          <a href="/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
             
@@ -194,7 +194,7 @@
       
         
         <li class="menu-item menu-item-categories">
-          <a href="/docs/categories/" rel="section">
+          <a href="/categories/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
             
@@ -204,7 +204,7 @@
       
         
         <li class="menu-item menu-item-archives">
-          <a href="/docs/archives/" rel="section">
+          <a href="/archives/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
@@ -245,12 +245,12 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://github.com/cq1228/docs/docs/2019/07/13/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E7%9B%B8%E5%85%B3/netty%E5%88%9D%E8%AF%86/">
+    <link itemprop="mainEntityOfPage" href="https://daodaoplay.cn/2019/07/13/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E7%9B%B8%E5%85%B3/netty%E5%88%9D%E8%AF%86/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Chen Q">
       <meta itemprop="description" content="">
-      <meta itemprop="image" content="/docs/images/avatar.gif">
+      <meta itemprop="image" content="/images/avatar.gif">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -297,7 +297,7 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/docs/categories/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index">
+                  <a href="/categories/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index">
                     <span itemprop="name">网络编程</span>
                   </a>
                 </span>
@@ -375,7 +375,7 @@
       
         <div class="post-tags">
           
-            <a href="/docs/tags/netty/" rel="tag"># netty</a>
+            <a href="/tags/netty/" rel="tag"># netty</a>
           
         </div>
       
@@ -388,17 +388,13 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/docs/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/Kubernetes%E9%83%A8%E7%BD%B2%E4%B9%8BEureka%E8%BF%81%E7%A7%BB/" rel="next" title="Kubernetes部署之Eureka迁移">
-                <i class="fa fa-chevron-left"></i> Kubernetes部署之Eureka迁移
-              </a>
-            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/docs/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/k8s%E4%B8%8A%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E6%96%B9%E6%A1%88/" rel="prev" title="k8s上日志收集方案">
+              <a href="/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/k8s%E4%B8%8A%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E6%96%B9%E6%A1%88/" rel="prev" title="k8s上日志收集方案">
                 k8s上日志收集方案 <i class="fa fa-chevron-right"></i>
               </a>
             
@@ -467,7 +463,7 @@
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
               <img class="site-author-image" itemprop="image"
-                src="/docs/images/avatar.gif"
+                src="/images/avatar.gif"
                 alt="Chen Q" />
             
               <p class="site-author-name" itemprop="name">Chen Q</p>
@@ -479,7 +475,7 @@
             
               <div class="site-state-item site-state-posts">
               
-                <a href="/docs/archives/%7C%7C%20archive">
+                <a href="/archives/%7C%7C%20archive">
               
                   <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">日志</span>
@@ -491,7 +487,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/docs/categories/index.html">
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">4</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -649,57 +645,57 @@
 
   
   
-    <script type="text/javascript" src="/docs/lib/jquery/index.js?v=2.1.3"></script>
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
   
 
   
   
-    <script type="text/javascript" src="/docs/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
   
 
   
   
-    <script type="text/javascript" src="/docs/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
   
 
   
   
-    <script type="text/javascript" src="/docs/lib/velocity/velocity.min.js?v=1.2.1"></script>
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
   
 
   
   
-    <script type="text/javascript" src="/docs/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
   
 
   
   
-    <script type="text/javascript" src="/docs/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
   
-
-
-  
-
-
-  <script type="text/javascript" src="/docs/js/src/utils.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/docs/js/src/motion.js?v=5.1.4"></script>
-
-
-
-  
-  
-
-  
-  <script type="text/javascript" src="/docs/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/docs/js/src/post-details.js?v=5.1.4"></script>
-
 
 
   
 
 
-  <script type="text/javascript" src="/docs/js/src/bootstrap.js?v=5.1.4"></script>
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
 
 
 
