@@ -85,16 +85,16 @@
 <meta property="og:url" content="https://daodaoplay.cn/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/k8s%E3%80%81docker%E7%AD%89%E6%89%AB%E7%9B%B2/index.html">
 <meta property="og:site_name" content="刀刀的博客">
 <meta property="og:description" content="了解docker、k8s等一些云原生的概念，以及他们之间的关系">
-<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-e7f506a3122f5767.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
-<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-82031516fffd3968.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://daodaoplay.cn/images/k8s/k8s_VM.jpg">
+<meta property="og:image" content="https://daodaoplay.cn/images/k8s/docker.jpg">
 <meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-a6e9b295f8a58c54.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
 <meta property="article:published_time" content="2019-07-13T12:46:25.000Z">
-<meta property="article:modified_time" content="2020-06-20T15:41:25.714Z">
+<meta property="article:modified_time" content="2020-06-21T15:08:15.518Z">
 <meta property="article:author" content="Chen Q">
 <meta property="article:tag" content="k8s">
 <meta property="article:tag" content="docker">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/23765437-e7f506a3122f5767.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta name="twitter:image" content="https://daodaoplay.cn/images/k8s/k8s_VM.jpg">
 
 
 
@@ -346,7 +346,7 @@
 </ul>
 <h1 id="docker是什么"><a href="#docker是什么" class="headerlink" title="docker是什么"></a>docker是什么</h1><p>要了解docker是什么，我们先了解下虚拟机和容器  </p>
 <h2 id="容器和虚拟机技术"><a href="#容器和虚拟机技术" class="headerlink" title="容器和虚拟机技术"></a>容器和虚拟机技术</h2><p>玩过虚拟机的肯定知道，VMWare和OpenStack，他们的作用都是让你在一个操作系统里模拟出多个电脑（可以不同系统）<br>虚拟机技术让我们可以模拟不同的系统，但是用过的人都知道，装VMWare比较麻烦（尤其要装免费的），也比较吃资源。   </p>
-<p>怎么办呢？<br>容器技术应运而生（当然<a href="http://dockone.io/article/8832" target="_blank" rel="noopener">起源</a>比较复杂，这里不赘述）<br>与VMWare相对，容器技术是一个<strong>轻量级</strong>的虚拟化，例如我们同一台电脑运行多个Nginx，多个qq，相互隔离。<br>下面用一张图来看他们之间的区别。<br><img src="https://upload-images.jianshu.io/upload_images/23765437-e7f506a3122f5767.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image (1).png"><br><strong><em>划重点</em></strong>   </p>
+<p>怎么办呢？<br>容器技术应运而生（当然<a href="http://dockone.io/article/8832" target="_blank" rel="noopener">起源</a>比较复杂，这里不赘述）<br>与VMWare相对，容器技术是一个<strong>轻量级</strong>的虚拟化，例如我们同一台电脑运行多个Nginx，多个qq，相互隔离。<br>下面用一张图来看他们之间的区别。<br><img src="/images/k8s/k8s_VM.jpg" alt="image (1).png"><br><strong><em>划重点</em></strong>   </p>
 <blockquote>
 <p>虚拟机有自己的操作系统，而容器技术没有，是利用的宿主机资源，虽然相对安全程度和隔离级别都会差一点但它能更小、更快、资源利用率更高。  </p>
 </blockquote>
@@ -364,7 +364,7 @@
 </ul>
 <p><strong><code>能不能只打包一张床,到哪它都有一整套，又好又快?</code></strong>  </p>
 <p>容器就是那张床！这里虚拟化就像整个卧室、电脑就像整个房子。   </p>
-<p><img src="https://upload-images.jianshu.io/upload_images/23765437-82031516fffd3968.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image (2).png"></p>
+<p><img src="/images/k8s/docker.jpg" alt="image (2).png"></p>
 <blockquote>
 <p>我们部署一个web运用</p>
 <ol>
@@ -432,8 +432,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/k8s%E4%B8%8A%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E6%96%B9%E6%A1%88/" rel="next" title="k8s上日志收集方案">
-                <i class="fa fa-chevron-left"></i> k8s上日志收集方案
+              <a href="/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/docker%E5%AE%B9%E5%99%A8%E4%B8%8D%E5%90%8C%E5%9C%BA%E6%99%AF%E4%B8%8B%E6%9E%84%E5%BB%BA/" rel="next" title="云原生专题/docker容器不同场景下构建">
+                <i class="fa fa-chevron-left"></i> 云原生专题/docker容器不同场景下构建
               </a>
             
           </div>
@@ -442,8 +442,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/docker%E5%AE%B9%E5%99%A8%E4%B8%8D%E5%90%8C%E5%9C%BA%E6%99%AF%E4%B8%8B%E6%9E%84%E5%BB%BA/" rel="prev" title="云原生专题/docker容器不同场景下构建">
-                云原生专题/docker容器不同场景下构建 <i class="fa fa-chevron-right"></i>
+              <a href="/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/Kubernetes%E9%83%A8%E7%BD%B2%E4%B9%8BEureka%E8%BF%81%E7%A7%BB/" rel="prev" title="Kubernetes部署之Eureka迁移">
+                Kubernetes部署之Eureka迁移 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -525,7 +525,7 @@
               
                 <a href="/archives/%7C%7C%20archive">
               
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">15</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -536,7 +536,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -547,7 +547,7 @@
               
               <div class="site-state-item site-state-tags">
                 
-                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-count">18</span>
                   <span class="site-state-item-name">标签</span>
                 
               </div>
