@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="elk," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="elk是什么，我们怎么把项目对接elk？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="不同环境接入elk">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2019/07/13/elk%E4%B8%93%E9%A2%98/%E4%B8%8D%E5%90%8C%E7%8E%AF%E5%A2%83%E6%8E%A5%E5%85%A5elk/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="elk是什么，我们怎么把项目对接elk？">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-be2dd8d221a41989.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="article:published_time" content="2019-07-13T12:46:25.000Z">
+<meta property="article:modified_time" content="2020-06-20T16:11:01.045Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="elk">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/23765437-be2dd8d221a41989.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2019/07/13/elk专题/不同环境接入elk/"/>
+
+
+
+
+
+  <title>不同环境接入elk | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2019/07/13/elk%E4%B8%93%E9%A2%98/%E4%B8%8D%E5%90%8C%E7%8E%AF%E5%A2%83%E6%8E%A5%E5%85%A5elk/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">不同环境接入elk</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-13T20:46:25+08:00">
+                2019-07-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/elk%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">elk专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  elk是什么，我们怎么把项目对接elk？
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="目录"><a href="#目录" class="headerlink" title="目录:"></a>目录:</h3><ul>
+<li><a href="#一-ELK是什么">ELK是什么</a></li>
+<li><a href="#二-目前项目应用场景">目前项目应用场景</a></li>
+<li><a href="#三-开始使用">开始使用</a><ul>
+<li><a href="#kibana介绍">kibana介绍</a></li>
+<li><a href="#如何定位">定位本质</a></li>
+<li><a href="#案例">案例</a></li>
+</ul>
+</li>
+<li><a href="#四-常见问题">常见问题</a></li>
+</ul>
+<h1 id="一-ELK是什么"><a href="#一-ELK是什么" class="headerlink" title="一 ELK是什么"></a>一 ELK是什么</h1><p><a href="http://3ms.huawei.com/hi/group/2830503/wiki_5475713.html" target="_blank" rel="noopener">参考资料</a>  </p>
+<p><a href="https://www.elastic.co/guide/en/beats/filebeat/7.3/index.html" target="_blank" rel="noopener">FileBeat</a><br><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="noopener">Elasticsearch</a><br><a href="https://www.elastic.co/guide/en/logstash/current/index.html" target="_blank" rel="noopener">Logstash</a><br><a href="https://www.elastic.co/guide/en/kibana/current/index.html" target="_blank" rel="noopener">Kibana</a>   </p>
+<p><strong>总结一句话，这是一个归集系统，也就是把所有环境、所有机器、所有目录的日志都集中起来管理，因此定位日志的方式跟以前大不一样。最后呈现给我们的就如同一个大的数据库</strong><br><img src="https://upload-images.jianshu.io/upload_images/23765437-be2dd8d221a41989.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<h1 id="二-目前项目应用场景"><a href="#二-目前项目应用场景" class="headerlink" title="二 目前项目应用场景"></a>二 目前项目应用场景</h1><ol>
+<li><p>.log 文件+elk  如aiom、tpcloud、onu、sg</p>
+</li>
+<li><p>k8s+elk </p>
+</li>
+</ol>
+<h1 id="三-开始使用"><a href="#三-开始使用" class="headerlink" title="三 开始使用"></a>三 开始使用</h1><p>以下文档，建议打开<a href="http://localhost:5601/app/kibana#/discover?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-15m,to:now))&_a=(columns:!(info,level,threadId,traceId),filters:!(),index:ed102ba0-690e-11ea-884d-df21c032ebe6,interval:auto,query:(language:kuery,query:' target="_blank" rel="noopener"'),sort:!('@timestamp',desc))">kibana界面</a>跟随操作</p>
+<h2 id="kibana介绍"><a href="#kibana介绍" class="headerlink" title="kibana介绍"></a>kibana介绍</h2><p>因为最后呈现给我们的是kibana，也就是一个用户界面，所以前面其他elasticsearch、logstash等不需要掌握，只需掌握<a href="">kibana工具使用</a>即可  </p>
+<p>总结一句话：<strong>可以傻瓜式点点点</strong></p>
+<h2 id="定位本质"><a href="#定位本质" class="headerlink" title="定位本质"></a>定位本质</h2><p>如上面说到，最后呈现跟我们的就是一个大的数据库，那么中心思想就不难想象，就是使用一个个字段来进行搜索、过滤、排序、关联。</p>
+<blockquote>
+<p>Ps:听说厉害的人甚至都不需要界面化kibana来查，有兴趣可以<a href="">用原生elasticsearch来增删改查</a>   </p>
+</blockquote>
+<p>下面用一个案例来说明一下操作步骤</p>
+<h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><blockquote>
+<p>:high_brightness: 一种是传统的was方式，一种是正在改进的docker方式也就是k8s环境。两套环境都已完成日志的归集部署</p>
+</blockquote>
+<ul>
+<li><p>要点一：索引根据不同环境来命名如：  </p>
+<ul>
+<li>环境1为：<code>test-%{+YYYY.MM.dd}</code>，因此可以建立索引模式<code>test-*</code>后面的+YYYY.MM.dd代表日期，也就是每天一个索引，我们使用正则来创建索引模式，是因为方便夸日期进行搜索，下同。  </li>
+<li>环境2： <code>testdev-%{+YYYY.MM.dd}</code>, 因此可以建立索引模式<code>testdev-*</code></li>
+</ul>
+<blockquote>
+<blockquote>
+<p>这里可能有些同学会疑惑，为什么选择两个不同的索引模式，为什么不用同一个呢？我之前也考虑过用同一个，也就是一个项目一个索引，但是发现不同环境有很多不同的字段，比如k8s中有namespace、pod这些概念，传统环境中有主机概念、文件路径概念。如果放到同一个索引里，对不同的数据都会产生多余的字段，因为同一个索引是共享字段的。所以为了处理方便采取分离的方式。</p>
+</blockquote>
+</blockquote>
+</li>
+<li><p>要点二：项目日志数据结构为:<br><code>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level-***%X{traceId}***- [%thread] %logger{5} - %msg%n}</code><br>此结构在elk已经转化为：</p>
+<ul>
+<li><strong>time</strong>  时间戳</li>
+<li><strong>level</strong> 日志级别</li>
+<li><strong>traceId</strong> 调用链traceId</li>
+<li><strong>logger</strong> 打印日志类</li>
+<li><strong>info</strong> 日志具体内容  </li>
+</ul>
+<ul>
+<li>要点三：模块 包括 portal、order、bpm等  </li>
+</ul>
+</li>
+</ul>
+<p>:question: <strong><em>知道这些有什么用呢？</em></strong>  </p>
+<p>记得上面说过的大的数据库吗，所有的数据都转化为一条sql记录，没错，一个索引就是一张表，以上这些统统都转化为一个个字段，如下表：<br>这些字段如何在elk上体现如下表：  </p>
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>环境1</th>
+<th>环境2</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>模块如:order</td>
+<td>moduleName</td>
+<td>kubernetes.labels.app</td>
+<td></td>
+</tr>
+<tr>
+<td>日志级别如:Error</td>
+<td>level</td>
+<td>level</td>
+<td></td>
+</tr>
+<tr>
+<td>时间戳</td>
+<td>@timestamp</td>
+<td>@timestamp</td>
+<td>一般统计时间段或者排序用的上</td>
+</tr>
+<tr>
+<td>调用链</td>
+<td>traceId</td>
+<td>traceId</td>
+<td>组合查询最重要的标识</td>
+</tr>
+<tr>
+<td>日志所在类</td>
+<td>logger</td>
+<td>logger</td>
+<td>如c.h.e.p.u.a.f.UeeUrlFilter</td>
+</tr>
+<tr>
+<td>进程ID</td>
+<td>threadId</td>
+<td>threadId</td>
+<td>threadId</td>
+</tr>
+<tr>
+<td>日志内容</td>
+<td>info</td>
+<td>info</td>
+<td>核心日志内容</td>
+</tr>
+<tr>
+<td>完整日志</td>
+<td>message</td>
+<td>message</td>
+<td>一条日志的所有内容，其他多个字段由它拆分而来</td>
+</tr>
+<tr>
+<td>日志路径</td>
+<td>log.file.path</td>
+<td>不需要</td>
+<td></td>
+</tr>
+<tr>
+<td>主机名</td>
+<td></td>
+<td></td>
+<td>暂时不用，后期加上</td>
+</tr>
+</tbody></table>
+<p>（在kibana Discovery界面的左侧部分参考本文最后一张图）</p>
+<p>时间戳、日志级别、调用链traceId等一个都不能少。如果现在对照着kibana你是不是发现还有些奇怪的字段，有兴趣的可以去了解，影响不大。</p>
+<p>其他的字段有兴趣的同学可以去探索  </p>
+<ul>
+<li>:mrs_claus: <strong>真实场景一</strong>    <ol start="4">
+<li>图形化显示<br><a href="">参考资料</a></li>
+</ol>
+</li>
+</ul>
+<h1 id="四-常见问题"><a href="#四-常见问题" class="headerlink" title="四 常见问题"></a>四 常见问题</h1><ol>
+<li><p>没有日志<br>①、确定elasticsearch组件是否正常 (get 请求)   </p>
+<blockquote>
+<p><code>curl http://localhost:9200/_cat/health?v</code>  </p>
+<pre><code>主要观察status是否为green  </code></pre></blockquote>
+<p>②、确定当天日志索引是否存在    </p>
+<blockquote>
+<p><code>http://localhost:9200/_cat/indices?v</code><br>   或者<br> <code>GET /_cat/indices/&lt;index&gt;</code> </p>
+</blockquote>
+<p>  全索引查询，查看结果中是否有对应的日志索引  </p>
+<p> 以上如果都正常，那么可能就是你限定条件错误，导致查询失败。如果异常，那么确实是没有收集到。一般步骤(查看kafka中topic  -&gt; 查看logstash日志 -&gt; 查看源日志)  </p>
+</li>
+<li><p>无法搜索到日志<br>①、确定搜索条件是否正确（模块、时间、关键字）<br>②、可能需要等待几分钟（还没收集到，延迟或者磁盘满了）<br>③、时区是否有问题，尤其是针对8点以前的日志，解决方法是往前搜索一天。<a href="">此问题已解决</a></p>
+</li>
+<li><p>日志时间有问题<br>有两个时间。<br>①、k8s中容器时区不对一般差8个小时,参考上面2.3<br>②、日志打印时间和收集时间不一致，一般差1秒以内</p>
+</li>
+<li><p>kibana 不可用的怎么办  </p>
+<blockquote>
+<p><a href="">使用原生elasticsearch的restful请求</a>  </p>
+</blockquote>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/elk/" rel="tag"># elk</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2019/07/13/elk%E4%B8%93%E9%A2%98/Elasticsearch%E5%9F%BA%E7%A1%80%E4%B9%8B%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/" rel="next" title="Elasticsearch基础之基本概念">
+                <i class="fa fa-chevron-left"></i> Elasticsearch基础之基本概念
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/06/22/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%B8%80%E3%80%81%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5%E5%8F%8A%E5%9F%BA%E6%9C%AC%E5%87%BD%E6%95%B0%E4%BB%8B%E7%BB%8D/" rel="prev" title="一、多线程基本概念及基本函数介绍">
+                一、多线程基本概念及基本函数介绍 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#目录"><span class="nav-number">1.</span> <span class="nav-text">目录:</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#一-ELK是什么"><span class="nav-number"></span> <span class="nav-text">一 ELK是什么</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#二-目前项目应用场景"><span class="nav-number"></span> <span class="nav-text">二 目前项目应用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#三-开始使用"><span class="nav-number"></span> <span class="nav-text">三 开始使用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kibana介绍"><span class="nav-number"></span> <span class="nav-text">kibana介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定位本质"><span class="nav-number"></span> <span class="nav-text">定位本质</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number"></span> <span class="nav-text">案例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#四-常见问题"><span class="nav-number"></span> <span class="nav-text">四 常见问题</span></a></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

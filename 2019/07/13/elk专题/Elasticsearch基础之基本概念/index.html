@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Elasticsearch," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Elasticsearch">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elasticsearch基础之基本概念">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2019/07/13/elk%E4%B8%93%E9%A2%98/Elasticsearch%E5%9F%BA%E7%A1%80%E4%B9%8B%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="Elasticsearch">
+<meta property="article:published_time" content="2019-07-13T12:46:25.000Z">
+<meta property="article:modified_time" content="2020-06-21T14:56:12.798Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="Elasticsearch">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2019/07/13/elk专题/Elasticsearch基础之基本概念/"/>
+
+
+
+
+
+  <title>Elasticsearch基础之基本概念 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2019/07/13/elk%E4%B8%93%E9%A2%98/Elasticsearch%E5%9F%BA%E7%A1%80%E4%B9%8B%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Elasticsearch基础之基本概念</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-13T20:46:25+08:00">
+                2019-07-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/elk%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">elk专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  Elasticsearch
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h1><ul>
+<li><a href="#基本概念">概念</a></li>
+<li><a href="#安装">安装</a></li>
+<li><a href="#使用">使用</a></li>
+</ul>
+<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><p><font color="084B8A">1. Near Realtime（NRT）：</font>  </p>
+<p> Elasticsearch是一个近实时搜索平台。 这意味着从索引文档到可搜索文档的时间有一点延迟（通常是一秒）.</p>
+<p><font color="084B8A">2. Cluster：</font>  </p>
+<p> 集群是一个或多个节点（服务器）的集合，它们共同保存您的整个数据，并提供跨所有节点的联合索引和搜索功能。 群集由唯一名称标识，默认情况下为“elasticsearch”。 此名称很重要，因为如果节点设置为按名称加入群集，则该节点只能是群集的一部分。  </p>
+<blockquote>
+<p>*<font color="084B8A">  确保不要在不同的环境中重用相同的群集名称，否则最终会导致节点加入错误的群集。 例如，您可以将logging-dev，logging-stage和logging-prod用于开发，登台和生产集群。请注意，如果集群中只有一个节点，那么它是完全正常的。 此外，您还可以拥有多个独立的集群，每个集群都有自己唯一的集群名称。</font>*</p>
+</blockquote>
+<p><font color="084B8A">3. Node:   </font></p>
+<p>节点是作为群集一部分的单个服务器，存储数据并参与群集的索引和搜索功能。就像集群一样，节点由名称标识，默认情况下，该名称是在启动时分配给节点的随机通用唯一标识符（UUID）。如果不需要默认值，可以定义所需的任何节点名称。此名称对于管理目的非常重要，您可以在其中识别网络中哪些服务器与Elasticsearch集群中的哪些节点相对应。</p>
+<blockquote>
+<p>*<font color=grey>可以将节点配置为按群集名称加入特定群集。默认情况下，每个节点都设置为加入名为elasticsearch的群集，这意味着如果您在网络上启动了许多节点并且 - 假设他们可以相互发现 - 他们将自动形成并加入名为elasticsearch的单个群集。*</p>
+</blockquote>
+<p>在单个群集中，您可以拥有任意数量的节点。此外，如果您的网络上当前没有其他Elasticsearch节点正在运行，则默认情况下，启动单个节点将形成名为elasticsearch的新单节点集群。</font></p>
+<p><font color="084B8A">4. Index:</font>  </p>
+<p>索引是具有某些类似特征的文档集合。 例如，您可以拥有客户数据的索引，产品目录的另一个索引以及订单数据的另一个索引。 索引由名称标识（必须全部小写），此名称用于在对其中的文档执行索引，搜索，更新和删除操作时引用索引。<br>在单个群集中，您可以根据需要定义任意数量的索引.  </p>
+<p><font color="084B8A">5. Type  （在6.0.0中弃用）</font>  </p>
+<p>一种类型，曾经是索引的逻辑类别/分区，允许您在同一索引中存储不同类型的文档，例如 一种用户类型，另一种用于博客帖子。 不再可能在索引中创建多个类型，并且将在更高版本中删除类型的整个概念。 请参阅删除映射类型以获取更多信息。  </p>
+<p><font color="084B8A">6. Document</font></p>
+<p>文档是可以被索引的基本信息单元。 例如，您可以为单个客户提供文档，为单个产品提供另一个文档，为单个订单提供另一个文档。 该文档以JSON（JavaScript Object Notation）表示，JSON是一种普遍存在的互联网数据交换格式。</p>
+<blockquote>
+<p>*<font color=grey> 在索引/类型中，您可以根据需要存储任意数量的文档。 请注意，尽管文档实际上驻留在索引中，但实际上必须将文档编入索引/分配给索引中的类型。*</font></p>
+</blockquote>
+<p><font color="084B8A">7. Shards &amp; Replicas</font></p>
+<p>索引可能存储大量可能超过单个节点的硬件限制的数据。 例如，占用1TB磁盘空间的十亿个文档的单个索引可能不适合单个节点的磁盘，或者可能太慢而无法单独从单个节点提供搜索请求。<br>为了解决这个问题，Elasticsearch提供了将索引细分为多个称为分片的功能。 创建索引时，只需定义所需的分片数即可。 每个分片本身都是一个功能齐全且独立的“索引”，可以托管在集群中的任何节点上。</p>
+<blockquote>
+<p>*<font color=grey> 分片很重要，主要有两个原因：*  </p>
+<ul>
+<li><em>它允许您水平拆分/缩放内容</em></li>
+<li><em>它允许您跨分片（可能在多个节点上）分布和并行化操作，从而提高性能/吞吐量</em></font></li>
+</ul>
+</blockquote>
+<p>总而言之，每个索引可以拆分为多个分片。 索引也可以复制为零（表示没有副本）或更多次。 复制后，每个索引都将具有主分片（从中复制的原始分片）和副本分片（主分片的副本）。</p>
+<blockquote>
+<p><font color=grey> <em>可以在创建索引时为每个索引定义分片和副本的数量。 创建索引后，您还可以随时动态更改副本数。 您可以使用_shrink和_split API更改现有索引的分片数，但这不是一项简单的任务，预先计划正确数量的分片是最佳方法。</em></font></p>
+</blockquote>
+<p>默认情况下，Elasticsearch中的每个索引都分配了5个主分片和1个副本，这意味着如果群集中至少有两个节点，则索引将包含5个主分片和另外5个副本分片（1个完整副本），总计为 每个索引10个分片。</p>
+<p><font color="B18904"> note:<strong>每个Elasticsearch分片都是Lucene索引。 单个Lucene索引中可以包含最大数量的文档。 自LUCENE-5843起，限制为2,147,483,519（= Integer.MAX_VALUE  -  128）个文件。 您可以使用_cat / shards API监视分片大小。</strong></font></p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="1、下载zip-tar-gz文件"><a href="#1、下载zip-tar-gz文件" class="headerlink" title="1、下载zip/tar.gz文件"></a>1、下载zip/tar.gz文件</h3><h3 id="2、配置管理工具安装（可选）"><a href="#2、配置管理工具安装（可选）" class="headerlink" title="2、配置管理工具安装（可选）"></a>2、配置管理工具安装（可选）</h3><ul>
+<li>Puppet</li>
+<li>Chef</li>
+<li>Ansible</li>
+</ul>
+<h3 id="3、运行"><a href="#3、运行" class="headerlink" title="3、运行"></a>3、运行</h3><p>   控制台运行 <code>./bin/elasticsearch</code><br>   作为后台程序运行 <code>./bin/elasticsearch -d -p pid</code></p>
+<h3 id="4、简单配置"><a href="#4、简单配置" class="headerlink" title="4、简单配置"></a>4、简单配置</h3><p>配置文件：config/elasticsearch.yml<br>任何能使用配置文件配置的都可以通过命令行来配置，但是集群配置需要通过配置文件配置，节点配置则可以通过命令行。</p>
+<h3 id="5、目录结构"><a href="#5、目录结构" class="headerlink" title="5、目录结构"></a>5、目录结构</h3><table>
+<thead>
+<tr>
+<th>文件夹</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>bin</td>
+<td>脚本</td>
+</tr>
+<tr>
+<td>conf</td>
+<td>配置</td>
+</tr>
+<tr>
+<td>data</td>
+<td>索引和分片的数据存放，可以使用多个location  path.data</td>
+</tr>
+<tr>
+<td>logs</td>
+<td>日志   path.logs</td>
+</tr>
+<tr>
+<td>plugins</td>
+<td>插件</td>
+</tr>
+<tr>
+<td>repo</td>
+<td>共享文件系统存储库位置。可以容纳多个位置。文件系统存储库可以放在此处指定的任何目录的任何子目录中。  path.repo</td>
+</tr>
+<tr>
+<td>script</td>
+<td>脚本</td>
+</tr>
+<tr>
+<td>- - -</td>
+<td></td>
+</tr>
+<tr>
+<td>## 使用</td>
+<td></td>
+</tr>
+<tr>
+<td>### 索引和查询</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>1、两种查询方式  </p>
+<ul>
+<li><p>使用纯粹的get url方式<br>如：<br>get <a href="http://ip1:9200/bank/_search?q=*&amp;sort=account_number:asc&amp;pretty" target="_blank" rel="noopener">http://ip1:9200/bank/_search?q=*&amp;sort=account_number:asc&amp;pretty</a></p>
+</li>
+<li><p>使用body的方式：  </p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">post： http:&#x2F;&#x2F;ip1:9200&#x2F;bank&#x2F;_search?pretty  </span><br><span class="line">Body：</span><br><span class="line">&#123;</span><br><span class="line">&quot;query&quot;: &#123; &quot;match_all&quot;: &#123;&#125; &#125;,</span><br><span class="line">&quot;sort&quot;: [</span><br><span class="line">    &#123; &quot;account_number&quot;: &quot;asc&quot; &#125;</span><br><span class="line">]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>2、查询范围</p>
+<ul>
+<li>query：</li>
+<li>size：</li>
+<li>from：</li>
+<li>sort：</li>
+</ul>
+<p>3、查询返回字段：_source</p>
+<ul>
+<li>一般我们查询，都会返回该数据的所有 ，倘若只需要查询的部分数据则可以指定_source<figure class="highlight plain"><figcaption><span>/bank/_search</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123; &quot;match_all&quot;: &#123;&#125; &#125;,</span><br><span class="line">  &quot;_source&quot;: [&quot;account_number&quot;, &quot;balance&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>4、匹配指定条件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;bank&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123; &quot;match&quot;: &#123; &quot;account_number&quot;: 20 &#125; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>5、bool查询</p>
+<ul>
+<li>与  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;bank&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;bool&quot;: &#123;</span><br><span class="line">      &quot;must&quot;: [</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;address&quot;: &quot;mill&quot; &#125; &#125;,</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;address&quot;: &quot;lane&quot; &#125; &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>或  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;bank&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;bool&quot;: &#123;</span><br><span class="line">      &quot;should&quot;: [</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;address&quot;: &quot;mill&quot; &#125; &#125;,</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;address&quot;: &quot;lane&quot; &#125; &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>非  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;bank&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;bool&quot;: &#123;</span><br><span class="line">      &quot;must_not&quot;: [</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;address&quot;: &quot;mill&quot; &#125; &#125;,</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;address&quot;: &quot;lane&quot; &#125; &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+6、使用过滤器查询<br>eg 范围查询</li>
+</ul>
+<p>7、聚合操作  </p>
+<p>在Elasticsearch中，可以执行返回匹配的搜索，同时在一个响应中返回与命中相关的聚合结果。而不用执行多次</p>
+<ul>
+<li><p>统计   group by  </p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;bank&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">&quot;size&quot;: 0,</span><br><span class="line">&quot;aggs&quot;: &#123;</span><br><span class="line">    &quot;group_by_state&quot;: &#123;</span><br><span class="line">    &quot;terms&quot;: &#123;</span><br><span class="line">        &quot;field&quot;: &quot;state.keyword&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  等同于数据库中<br><code>SELECT state, COUNT(*) FROM bank GROUP BY state ORDER BY COUNT(*) DESC LIMIT 10;</code></p>
+</li>
+<li><p>计算（平均值）</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;bank&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">&quot;size&quot;: 0,</span><br><span class="line">&quot;aggs&quot;: &#123;</span><br><span class="line">    &quot;group_by_state&quot;: &#123;</span><br><span class="line">    &quot;terms&quot;: &#123;</span><br><span class="line">        &quot;field&quot;: &quot;state.keyword&quot;,</span><br><span class="line">        &quot;order&quot;: &#123;</span><br><span class="line">        &quot;average_balance&quot;: &quot;desc&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;aggs&quot;: &#123;</span><br><span class="line">        &quot;average_balance&quot;: &#123;</span><br><span class="line">        &quot;avg&quot;: &#123;</span><br><span class="line">            &quot;field&quot;: &quot;balance&quot;</span><br><span class="line">        &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<h3 id="增删改"><a href="#增删改" class="headerlink" title="增删改"></a>增删改</h3><h3 id="集群状态"><a href="#集群状态" class="headerlink" title="集群状态"></a>集群状态</h3><p>1、基本状态查看  </p>
+<p><a href="http://ip1:9200/_cat/health?v" target="_blank" rel="noopener">http://ip1:9200/_cat/health?v</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">epoch      timestamp cluster     status node.total node.data shards pri relo init unassign pending_tasks max_task_wait_time active_shards_percent</span><br><span class="line"></span><br><span class="line">1564467233 06:13:53  elastic_green           3         3    116  58    0    0        0             0                  -                100.0%</span><br></pre></td></tr></table></figure>
+<p><strong>status：</strong> </p>
+<ul>
+<li><font color="11BB">Green</font> ： 集群健康</li>
+<li><font color="FFaa00">Yellow</font>： 数据正常，但是有些副本还没有分配</li>
+<li><font color=red>Red</font>：数据丢失，不可用</li>
+</ul>
+<p>2、获取所有的节点信息  </p>
+<p><a href="http://ip1:9200/_cat/nodes?v" target="_blank" rel="noopener">http://ip1:9200/_cat/nodes?v</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ip            heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name</span><br><span class="line">ip1           59          73   0    0.03    0.02     0.00 mdi       *      node-2</span><br><span class="line">ip2           32          94   1    0.05    0.03     0.06 mdi       -      node-3</span><br><span class="line">ip3            65          71   0    0.00    0.00     0.00 mdi       -      node-1</span><br></pre></td></tr></table></figure>
+<p>3、获取所有的索引  </p>
+<p><a href="http://ip1:9200/_cat/indices?v" target="_blank" rel="noopener">http://ip1:9200/_cat/indices?v</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/Elasticsearch/" rel="tag"># Elasticsearch</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2019/07/13/%E4%BA%91%E5%8E%9F%E7%94%9F%E4%B8%93%E9%A2%98/Kubernetes%E9%83%A8%E7%BD%B2%E4%B9%8BEureka%E8%BF%81%E7%A7%BB/" rel="next" title="Kubernetes部署之Eureka迁移">
+                <i class="fa fa-chevron-left"></i> Kubernetes部署之Eureka迁移
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2019/07/13/elk%E4%B8%93%E9%A2%98/%E4%B8%8D%E5%90%8C%E7%8E%AF%E5%A2%83%E6%8E%A5%E5%85%A5elk/" rel="prev" title="不同环境接入elk">
+                不同环境接入elk <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#目录"><span class="nav-number">1.</span> <span class="nav-text">目录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#基本概念"><span class="nav-number">1.1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装"><span class="nav-number">1.2.</span> <span class="nav-text">安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1、下载zip-tar-gz文件"><span class="nav-number">1.2.1.</span> <span class="nav-text">1、下载zip&#x2F;tar.gz文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2、配置管理工具安装（可选）"><span class="nav-number">1.2.2.</span> <span class="nav-text">2、配置管理工具安装（可选）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3、运行"><span class="nav-number">1.2.3.</span> <span class="nav-text">3、运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4、简单配置"><span class="nav-number">1.2.4.</span> <span class="nav-text">4、简单配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5、目录结构"><span class="nav-number">1.2.5.</span> <span class="nav-text">5、目录结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#增删改"><span class="nav-number">1.2.6.</span> <span class="nav-text">增删改</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#集群状态"><span class="nav-number">1.2.7.</span> <span class="nav-text">集群状态</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

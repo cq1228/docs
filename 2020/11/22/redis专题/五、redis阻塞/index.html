@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="阻塞," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="redis是典型的单线程架构，所有的读写都在一个线程上执行，如果发生阻塞，将会是噩梦">
+<meta property="og:type" content="article">
+<meta property="og:title" content="五、redis阻塞">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/11/22/redis%E4%B8%93%E9%A2%98/%E4%BA%94%E3%80%81redis%E9%98%BB%E5%A1%9E/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="redis是典型的单线程架构，所有的读写都在一个线程上执行，如果发生阻塞，将会是噩梦">
+<meta property="article:published_time" content="2020-11-22T11:55:32.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:39:11.724Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="阻塞">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/11/22/redis专题/五、redis阻塞/"/>
+
+
+
+
+
+  <title>五、redis阻塞 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/11/22/redis%E4%B8%93%E9%A2%98/%E4%BA%94%E3%80%81redis%E9%98%BB%E5%A1%9E/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">五、redis阻塞</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-11-22T19:55:32+08:00">
+                2020-11-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/redis%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">redis专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  redis是典型的单线程架构，所有的读写都在一个线程上执行，如果发生阻塞，将会是噩梦
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="发现阻塞"><a href="#发现阻塞" class="headerlink" title="发现阻塞"></a>发现阻塞</h2><p>当redis阻塞时，最先感知到的应该是应用客户端，可以借助日志统计发现</p>
+<h2 id="内在原因"><a href="#内在原因" class="headerlink" title="内在原因"></a>内在原因</h2><h3 id="数据或者调用api不合理"><a href="#数据或者调用api不合理" class="headerlink" title="数据或者调用api不合理"></a>数据或者调用api不合理</h3><p>如果一个redis的值过大，在操作时会非常慢，比如一个包含上万个元素的hash结构，执行hgetall操作。  </p>
+<ol>
+<li><p>如何发现慢查询<br>Redis原生提供慢查询的功能，使用slowlog get{n}命令，查看最近的n条慢查询记录。发现慢查询后，开发人员需要及时优化</p>
+<ul>
+<li>修改为低时间复杂度的算法</li>
+<li>调整大对象</li>
+</ul>
+</li>
+<li><p>如何发现大对象<br>Redis本身提供发现大对象的工具，对应redis-cli bigkeys，</p>
+</li>
+</ol>
+<h3 id="CPU饱和"><a href="#CPU饱和" class="headerlink" title="CPU饱和"></a>CPU饱和</h3><p>redis处理命令时只使用一个cpu，当cpu资源不足时，将会发生阻塞</p>
+<h3 id="持久化阻塞"><a href="#持久化阻塞" class="headerlink" title="持久化阻塞"></a>持久化阻塞</h3><p>一般我们都会开启持久化功能，当redis发生持久化操作时，可能导致阻塞，如：fork阻塞、AOF刷盘阻塞、HugePage写操作阻塞</p>
+<ol>
+<li>fork阻塞<br>RDB和AOF重写(RDB重写是指bgsave、aof是压缩)都会触发fork操作，也就是父进程创建一个新的进程，这是一个比较耗时的过程，<br>可以使用info stats查看latest_fork_usec指标。</li>
+<li>AOF刷盘阻塞<br>开启AOF后，一般每秒将缓冲区的内容持久化到文件中，如果硬盘压力大，fsync操作将会阻塞。<br>可以通过info persistence统计aof_delayed_fsync指标</li>
+<li>HugePage写操作阻塞</li>
+</ol>
+<h2 id="外在原因"><a href="#外在原因" class="headerlink" title="外在原因"></a>外在原因</h2><ol>
+<li>CPU竞争</li>
+<li>内存交换</li>
+<li>网络问题<ul>
+<li>网络闪断</li>
+<li>超过连接限制</li>
+<li>网络延迟</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/%E9%98%BB%E5%A1%9E/" rel="tag"># 阻塞</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/11/21/redis%E4%B8%93%E9%A2%98/%E5%9B%9B%E3%80%81redis%E6%8C%81%E4%B9%85%E5%8C%96/" rel="next" title="四、redis持久化">
+                <i class="fa fa-chevron-left"></i> 四、redis持久化
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/11/30/redis%E4%B8%93%E9%A2%98/%E4%B8%83%E3%80%81redis%E5%A4%8D%E5%88%B6/" rel="prev" title="七、redis复制">
+                七、redis复制 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#发现阻塞"><span class="nav-number">1.</span> <span class="nav-text">发现阻塞</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内在原因"><span class="nav-number">2.</span> <span class="nav-text">内在原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据或者调用api不合理"><span class="nav-number">2.1.</span> <span class="nav-text">数据或者调用api不合理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CPU饱和"><span class="nav-number">2.2.</span> <span class="nav-text">CPU饱和</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#持久化阻塞"><span class="nav-number">2.3.</span> <span class="nav-text">持久化阻塞</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#外在原因"><span class="nav-number">3.</span> <span class="nav-text">外在原因</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

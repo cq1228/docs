@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="之前我们有讲，在启动集群（也叫仲裁，quorum）模式的时候有两个TCP端口，一个是仲裁通信，一个是群首选举。现在我们跟着源码来看一下。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="六、Zookeeper源码解析之选举中的通信">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E5%85%AD%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%80%89%E4%B8%BE%E4%B8%AD%E7%9A%84%E9%80%9A%E4%BF%A1/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="之前我们有讲，在启动集群（也叫仲裁，quorum）模式的时候有两个TCP端口，一个是仲裁通信，一个是群首选举。现在我们跟着源码来看一下。">
+<meta property="article:published_time" content="2020-08-15T11:12:14.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:57:11.106Z">
+<meta property="article:author" content="Chen Q">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/15/zookeeper专题/六、Zookeeper源码解析之选举中的通信/"/>
+
+
+
+
+
+  <title>六、Zookeeper源码解析之选举中的通信 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E5%85%AD%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%80%89%E4%B8%BE%E4%B8%AD%E7%9A%84%E9%80%9A%E4%BF%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">六、Zookeeper源码解析之选举中的通信</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-15T19:12:14+08:00">
+                2020-08-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/zookeeper%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">zookeeper专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  之前我们有讲，在启动集群（也叫仲裁，quorum）模式的时候有两个TCP端口，一个是仲裁通信，一个是群首选举。现在我们跟着源码来看一下。
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="QuorumCnxManager介绍"><a href="#QuorumCnxManager介绍" class="headerlink" title="QuorumCnxManager介绍"></a>QuorumCnxManager介绍</h2><ul>
+<li>这个类是专门用于leader选举的连接管理器，对应专门有个端口来执行这个通信。它能保证，每个连接两两之前保持有且仅有一个连接。  </li>
+<li>如果两个服务端同时开启一个连接，这个管理器会采用一个简单的tie-breaking机制来决定删除其中一个。</li>
+<li>对于每个连接，管理器维护一个消息队列，每次要发送的消息都会被放到队列尾部，当一个连接挂掉后，sender线程会将该消息放回队列。  </li>
+</ul>
+<p>接下来我们来了解这个类</p>
+<h3 id="主要属性："><a href="#主要属性：" class="headerlink" title="主要属性："></a>主要属性：</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> QuorumPeer self;</span><br><span class="line"><span class="comment">// 线程池</span></span><br><span class="line"><span class="keyword">private</span> ThreadPoolExecutor connectionExecutor;</span><br><span class="line"><span class="comment">// 发送线程，对端的sid作为key，value为线程SendWorker</span></span><br><span class="line"><span class="keyword">final</span> ConcurrentHashMap&lt;Long, SendWorker&gt; senderWorkerMap;</span><br><span class="line"><span class="comment">// 发送队列，对端的sid作为key，value是一个消息队列先进先出，有界队列</span></span><br><span class="line"><span class="keyword">final</span> ConcurrentHashMap&lt;Long, BlockingQueue&lt;ByteBuffer&gt;&gt; queueSendMap;</span><br><span class="line"><span class="comment">// 最后发送的消息</span></span><br><span class="line"><span class="keyword">final</span> ConcurrentHashMap&lt;Long, ByteBuffer&gt; lastMessageSent;</span><br><span class="line"><span class="comment">// 接收消息队列，因为都是同一个线程处理，无需针对不同客户端设置。</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> BlockingQueue&lt;Message&gt; recvQueue;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> Listener listener;</span><br></pre></td></tr></table></figure>
+
+<p>专门指出一点，zookeeper用的阻塞队列大都是用的自定义的CircularBlockingQueue类，这个类与我们在并发时讲过的其他阻塞队列有两点不同：</p>
+<ol>
+<li>只实现了部分方法，很多多余的方法都throw new UnsupportedOperationException();</li>
+<li>在放入元素时，只能使用offer方法，且该offer保证一定返回true，因为在队列满的时候它会删除对一个元素，也就是最开始进来的，有点像线程的拒绝策略</li>
+</ol>
+<p>接着我们看看上面几个Thread实现类</p>
+<h3 id="Listener"><a href="#Listener" class="headerlink" title="Listener"></a>Listener</h3><p>从上面选举流程中我们可以看到，在真正开始选举前我们启动了listener，因此我们可以合理的猜测这就是一个监听其他服务端请求过来的线程。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> portBindMaxRetry; <span class="comment">//重试次数</span></span><br><span class="line"><span class="keyword">private</span> List&lt;ListenerHandler&gt; listenerHandlers;  <span class="comment">// 监听处理列表</span></span><br><span class="line"><span class="comment">// 线程执行流程</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!shutdown) &#123;</span><br><span class="line">        LOG.debug(<span class="string">"Listener thread started, myId: &#123;&#125;"</span>, self.getId());</span><br><span class="line">        Set&lt;InetSocketAddress&gt; addresses;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (self.getQuorumListenOnAllIPs()) &#123; <span class="comment">// 通配符端口，一般我们只配置一个端口</span></span><br><span class="line">            addresses = self.getElectionAddress().getWildcardAddresses();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            addresses = self.getElectionAddress().getAllAddresses();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        CountDownLatch latch = <span class="keyword">new</span> CountDownLatch(addresses.size());</span><br><span class="line">        listenerHandlers = addresses.stream().map(address -&gt;</span><br><span class="line">                        <span class="keyword">new</span> ListenerHandler(address, self.shouldUsePortUnification(), self.isSslQuorum(), latch))</span><br><span class="line">                .collect(Collectors.toList());<span class="comment">// 根据端口配置不同的处理器，</span></span><br><span class="line"></span><br><span class="line">        ExecutorService executor = Executors.newFixedThreadPool(addresses.size());</span><br><span class="line">        listenerHandlers.forEach(executor::submit);<span class="comment">// 提交到线程池中</span></span><br><span class="line">        <span class="comment">// 等待完成，也就时等待停止信号，需要每个处理器都不在工作了</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            latch.await();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException ie) &#123;</span><br><span class="line">            LOG.error(<span class="string">"Interrupted while sleeping. Ignoring exception"</span>, ie);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">// Clean up for shutdown.</span></span><br><span class="line">            <span class="keyword">for</span> (ListenerHandler handler : listenerHandlers) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    handler.close(); <span class="comment">// 关闭所有的监听</span></span><br><span class="line">                &#125; <span class="keyword">catch</span> (IOException ie) &#123;</span><br><span class="line">                    <span class="comment">// Don't log an error for shutdown.</span></span><br><span class="line">                    LOG.debug(<span class="string">"Error closing server socket"</span>, ie);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从代码中我们可以看到真正工作的时里面建立的listenerHandlers，因此我们再来看这个子类</p>
+<h4 id="ListenerHandler"><a href="#ListenerHandler" class="headerlink" title="ListenerHandler"></a>ListenerHandler</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> ServerSocket serverSocket; <span class="comment">// 注意，这里时一个服务端</span></span><br><span class="line"><span class="keyword">private</span> InetSocketAddress address;</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        acceptConnections(); <span class="comment">// 核心代码</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        latch.countDown();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">acceptConnections</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> numRetries = <span class="number">0</span>;</span><br><span class="line">    Socket client = <span class="keyword">null</span>;   <span class="comment">// 客户端</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((!shutdown) &amp;&amp; (portBindMaxRetry == <span class="number">0</span> || numRetries &lt; portBindMaxRetry)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            serverSocket = createNewServerSocket(); <span class="comment">// 真正的服务端，使用tcp协议</span></span><br><span class="line">            LOG.info(<span class="string">"&#123;&#125; is accepting connections now, my election bind port: &#123;&#125;"</span>, QuorumCnxManager.<span class="keyword">this</span>.mySid, address.toString());</span><br><span class="line">            <span class="keyword">while</span> (!shutdown) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    client = serverSocket.accept(); <span class="comment">// 接受数据</span></span><br><span class="line">                    setSockOpts(client); <span class="comment">// 设置socket选项</span></span><br><span class="line">                    LOG.info(<span class="string">"Received connection request from &#123;&#125;"</span>, client.getRemoteSocketAddress());</span><br><span class="line">                    <span class="comment">// 如果配置了sasl 鉴权方式，那么会异步处理请求，因为sasl鉴权服务器需要一定时间完成</span></span><br><span class="line">                    <span class="keyword">if</span> (quorumSaslAuthEnabled) &#123;</span><br><span class="line">                        receiveConnectionAsync(client);<span class="comment">// 异步处理</span></span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        receiveConnection(client);  <span class="comment">// 同步处理</span></span><br><span class="line">                    &#125;</span><br><span class="line">                    numRetries = <span class="number">0</span>;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (SocketTimeoutException e) &#123;</span><br><span class="line">                    LOG.warn(<span class="string">"The socket is listening for the election accepted "</span></span><br><span class="line">                            + <span class="string">"and it timed out unexpectedly, but will retry."</span></span><br><span class="line">                            + <span class="string">"see ZOOKEEPER-2836"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            <span class="comment">// ... 省略其他错误处理</span></span><br><span class="line">            closeSocket(client);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">receiveConnection</span><span class="params">(<span class="keyword">final</span> Socket sock)</span> </span>&#123;</span><br><span class="line">    DataInputStream din = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        din = <span class="keyword">new</span> DataInputStream(<span class="keyword">new</span> BufferedInputStream(sock.getInputStream()));</span><br><span class="line">        LOG.debug(<span class="string">"Sync handling of connection request received from: &#123;&#125;"</span>, sock.getRemoteSocketAddress());</span><br><span class="line">        handleConnection(sock, din);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        LOG.error(<span class="string">"Exception handling connection, addr: &#123;&#125;, closing server connection"</span>, sock.getRemoteSocketAddress());</span><br><span class="line">        LOG.debug(<span class="string">"Exception details: "</span>, e);</span><br><span class="line">        closeSocket(sock);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于同步和异步的过程类似，我们这里只分析其中过一个，receiveConnection(client)主要过程调用了handleConnection(sock, din)；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">handleConnection</span><span class="params">(Socket sock, DataInputStream din)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">     Long sid = <span class="keyword">null</span>, protocolVersion = <span class="keyword">null</span>;</span><br><span class="line">     MultipleAddresses electionAddr = <span class="keyword">null</span>;</span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         protocolVersion = din.readLong();</span><br><span class="line">         <span class="keyword">if</span> (protocolVersion &gt;= <span class="number">0</span>) &#123; <span class="comment">// this is a server id and not a protocol version</span></span><br><span class="line">             sid = protocolVersion;</span><br><span class="line">         &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 InitialMessage init = InitialMessage.parse(protocolVersion, din); <span class="comment">// 如果不是sid，那么就任务这是一个协议版本，并尝试解析</span></span><br><span class="line">                 sid = init.sid;  <span class="comment">// 还是要拿sid</span></span><br><span class="line">                 <span class="keyword">if</span> (!init.electionAddr.isEmpty()) &#123;</span><br><span class="line">                     electionAddr = <span class="keyword">new</span> MultipleAddresses(init.electionAddr,</span><br><span class="line">                             Duration.ofMillis(self.getMultiAddressReachabilityCheckTimeoutMs()));</span><br><span class="line">                 &#125;</span><br><span class="line">                 LOG.debug(<span class="string">"Initial message parsed by &#123;&#125;: &#123;&#125;"</span>, self.getId(), init.toString());</span><br><span class="line">             &#125; <span class="keyword">catch</span> (InitialMessage.InitialMessageException ex) &#123;</span><br><span class="line">                 LOG.error(<span class="string">"Initial message parsing error!"</span>, ex);</span><br><span class="line">                 closeSocket(sock);</span><br><span class="line">                 <span class="keyword">return</span>;</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">if</span> (sid == QuorumPeer.OBSERVER_ID) &#123;</span><br><span class="line">             <span class="comment">/*</span></span><br><span class="line"><span class="comment">              * Choose identifier at random. We need a value to identify</span></span><br><span class="line"><span class="comment">              * the connection.</span></span><br><span class="line"><span class="comment">              */</span></span><br><span class="line">             sid = observerCounter.getAndDecrement();</span><br><span class="line">             LOG.info(<span class="string">"Setting arbitrary identifier to observer: &#123;&#125;"</span>, sid);</span><br><span class="line">         &#125;</span><br><span class="line">     &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">         LOG.warn(<span class="string">"Exception reading or writing challenge"</span>, e);</span><br><span class="line">         closeSocket(sock);</span><br><span class="line">         <span class="keyword">return</span>;</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="comment">// do authenticating learner</span></span><br><span class="line">     authServer.authenticate(sock, din);</span><br><span class="line">     <span class="comment">//这就是上面上面说过的tie-breaking机制，如果sid比自己小，则关闭该连接，也就是保证只有比自己sid大的才能发送信息过来。</span></span><br><span class="line">     <span class="keyword">if</span> (sid &lt; self.getId()) &#123;</span><br><span class="line"></span><br><span class="line">         SendWorker sw = senderWorkerMap.get(sid);</span><br><span class="line">         <span class="keyword">if</span> (sw != <span class="keyword">null</span>) &#123;</span><br><span class="line">             sw.finish();</span><br><span class="line">         &#125;</span><br><span class="line">         LOG.debug(<span class="string">"Create new connection to server: &#123;&#125;"</span>, sid);</span><br><span class="line">         closeSocket(sock);</span><br><span class="line">         <span class="keyword">if</span> (electionAddr != <span class="keyword">null</span>) &#123;</span><br><span class="line">             connectOne(sid, electionAddr); <span class="comment">// 这里开启一个新连接，也就是保证我去主动连比该sid小的</span></span><br><span class="line">         &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">             connectOne(sid);</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">     &#125; <span class="keyword">else</span> <span class="keyword">if</span> (sid == self.getId()) &#123;</span><br><span class="line">         <span class="comment">// we saw this case in ZOOKEEPER-2164</span></span><br><span class="line">         LOG.warn(<span class="string">"We got a connection request from a server with our own ID. "</span></span><br><span class="line">                  + <span class="string">"This should be either a configuration error, or a bug."</span>);</span><br><span class="line">     &#125; <span class="keyword">else</span> &#123; <span class="comment">// 如果sid比本身的sid大，则开启一个线程去接收数据。</span></span><br><span class="line">         SendWorker sw = <span class="keyword">new</span> SendWorker(sock, sid);  <span class="comment">// 接收线程</span></span><br><span class="line">         RecvWorker rw = <span class="keyword">new</span> RecvWorker(sock, din, sid, sw); <span class="comment">// 发送线程</span></span><br><span class="line">         sw.setRecv(rw);</span><br><span class="line"></span><br><span class="line">         SendWorker vsw = senderWorkerMap.get(sid);</span><br><span class="line">         <span class="keyword">if</span> (vsw != <span class="keyword">null</span>) &#123;</span><br><span class="line">             vsw.finish();   <span class="comment">// 清空上一轮的信息</span></span><br><span class="line">         &#125;</span><br><span class="line">         senderWorkerMap.put(sid, sw);</span><br><span class="line">         queueSendMap.putIfAbsent(sid, <span class="keyword">new</span> CircularBlockingQueue&lt;&gt;(SEND_CAPACITY));</span><br><span class="line"></span><br><span class="line">         sw.start();</span><br><span class="line">         rw.start();</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>从以上代码中我们可以总结以下过程：</p>
+<ol>
+<li>第一次会创建一个ServerSocket，用来监听与其他server端的通信</li>
+<li>在接受到请求后，会解析数据包，第一个解析是服务端的sid</li>
+<li>如果sid &lt; self.sid 那么久断开这次请求，并发起一个主动连接。保证了服务器两两之间只有一个连接</li>
+<li>如果sid &gt; self.sid 则会创建一个SendWorker和RecvWorker来处理这个连接。</li>
+<li>所有需要发送的消息，以对端sid作为key放入queueSendMap，senderWorkerMap中的每个线程会不断去队列中拿消息发送</li>
+<li>同待发送的消息一样，我们也猜测，recvQueue这个队列同样是接收所有的请求。我们往下看如何做的。</li>
+</ol>
+<h3 id="RecvWorker"><a href="#RecvWorker" class="headerlink" title="RecvWorker"></a>RecvWorker</h3><p>属性：</p>
+<ul>
+<li>Socket sock; // 持有tcp连接的客户端，也就是用来接受和发送通信</li>
+<li>final DataInputStream din; // 重复使用的数据包</li>
+<li>final SendWorker sw; 对应的发送线程。</li>
+</ul>
+<p>这个类主要在收到请求的时候会创建，每个Zookeeper服务节点都会开启一个群首选举的端口ServerSocket ，每收到一个连接都会开启一个客户端去接收信息，并发送信息。<br>我们来看它具体做的工作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"> <span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    threadCnt.incrementAndGet();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        LOG.debug(<span class="string">"RecvWorker thread towards &#123;&#125; started. myId: &#123;&#125;"</span>, sid, QuorumCnxManager.<span class="keyword">this</span>.mySid);</span><br><span class="line">        <span class="keyword">while</span> (running &amp;&amp; !shutdown &amp;&amp; sock != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">int</span> length = din.readInt(); <span class="comment">// 第一个数据是数据包的长度</span></span><br><span class="line">            <span class="keyword">if</span> (length &lt;= <span class="number">0</span> || length &gt; PACKETMAXSIZE) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Received packet with invalid packet: "</span> + length);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">final</span> <span class="keyword">byte</span>[] msgArray = <span class="keyword">new</span> <span class="keyword">byte</span>[length];</span><br><span class="line">            din.readFully(msgArray, <span class="number">0</span>, length);</span><br><span class="line">            addToRecvQueue(<span class="keyword">new</span> Message(ByteBuffer.wrap(msgArray), sid));<span class="comment">// 拿到消息并放入recv队列，注意这是外部类方法</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        .....</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        LOG.warn(<span class="string">"Interrupting SendWorker thread from RecvWorker. sid: &#123;&#125;. myId: &#123;&#125;"</span>, sid, QuorumCnxManager.<span class="keyword">this</span>.mySid);</span><br><span class="line">        sw.finish(); <span class="comment">// 可以看出这是个长连接，只有在非正常状态下才会关闭</span></span><br><span class="line">        closeSocket(sock);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面的代码中可以看出，这个类的主要作用就是不断的接收从socket传来的消息，并放入到recvQueue 队列中</p>
+<blockquote>
+<p>recvQueue 什么时候处理呢？这里有疑惑的同学可以回到<a href="https://www.jianshu.com/p/d700e7586cf1" target="_blank" rel="noopener">选举过程</a>这一篇文章就可以看到再Message类中处理了。</p>
+</blockquote>
+<h3 id="SendWorker"><a href="#SendWorker" class="headerlink" title="SendWorker"></a>SendWorker</h3><p>与RecvWorker类似，它也有如下属性</p>
+<ul>
+<li>Socket sock;</li>
+<li>RecvWorker recvWorker;  // 对应的接收进程</li>
+<li>DataOutputStream dout;</li>
+</ul>
+<p>发送代码这里就不粘贴了，过程类似接收进程，不停的从发送队列中拿到消息然后发到对端。</p>
+<blockquote>
+<p>这里有个不同要特别说明下，就是在没有消息的时候会重发发上次最后一条发送的消息也就是上面提到的lastMessageSent，为什么这么做，官方说明是因为，当我们同时删除和创建新连接时，有可能发送了消息但从未收到（这个时候可能发送队列为空）,保留这个最近发送的消息列表，并重新发送最近发送的消息。接收多个副本是无害的（为什么无害？）。</p>
+</blockquote>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/08/14/zookeeper%E4%B8%93%E9%A2%98/%E5%9B%9B%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8Bserver%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/" rel="next" title="四、Zookeeper源码解析之server启动过程">
+                <i class="fa fa-chevron-left"></i> 四、Zookeeper源码解析之server启动过程
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E4%BA%94%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E9%80%89%E4%B8%BE%E8%BF%87%E7%A8%8B/" rel="prev" title="五、Zookeeper源码解析之集群模式下的选举过程">
+                五、Zookeeper源码解析之集群模式下的选举过程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#QuorumCnxManager介绍"><span class="nav-number">1.</span> <span class="nav-text">QuorumCnxManager介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#主要属性："><span class="nav-number">1.1.</span> <span class="nav-text">主要属性：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Listener"><span class="nav-number">1.2.</span> <span class="nav-text">Listener</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ListenerHandler"><span class="nav-number">1.2.1.</span> <span class="nav-text">ListenerHandler</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RecvWorker"><span class="nav-number">1.3.</span> <span class="nav-text">RecvWorker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SendWorker"><span class="nav-number">1.4.</span> <span class="nav-text">SendWorker</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

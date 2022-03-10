@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="zookeeper初步介绍">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一、zookeeper简介">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/11/zookeeper%E4%B8%93%E9%A2%98/%E4%B8%80%E3%80%81zookeeper%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="zookeeper初步介绍">
+<meta property="article:published_time" content="2020-08-11T11:12:14.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:49:32.749Z">
+<meta property="article:author" content="Chen Q">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/11/zookeeper专题/一、zookeeper简介/"/>
+
+
+
+
+
+  <title>一、zookeeper简介 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/08/11/zookeeper%E4%B8%93%E9%A2%98/%E4%B8%80%E3%80%81zookeeper%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">一、zookeeper简介</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-11T19:12:14+08:00">
+                2020-08-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/zookeeper%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">zookeeper专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  zookeeper初步介绍
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>Apache ZooKeeper致力于开发和维护可实现高度可靠的分布式协调的开源服务器<br>简单讲就是，它能解决分布式应用中很多复杂工作，比如同步、竞争等。它在配置管理、名字服务、分布式锁、集群管理中都能提供很好的服务。  </p>
+<p>由于Zookeeper使用内存文件系统来管理数据，对于大量数据的管理不适用，所以一般用作管理关键数据（元数据）</p>
+<h3 id="Zookeeper的设计目标"><a href="#Zookeeper的设计目标" class="headerlink" title="Zookeeper的设计目标"></a>Zookeeper的设计目标</h3><ol>
+<li><p>简单： zookeeper通过进程共享一个命名空间来相互协调，这个命名空间称为znode，是一种和文件夹、文件非常相似的一种结构。但不同点是znode是为内存设计的，也就意味着它可以实现高吞吐量和低时延</p>
+</li>
+<li><p>可复制： 也就是说它自己本身也是高可用，分布式部署的，它们一起维护znode的状态。</p>
+</li>
+<li><p>严格有序：ZooKeeper为每个更新加一个编号，该编号反映了所有ZooKeeper事务的顺序。后续操作可以使用该顺序实现更高级别的抽象，比如同步原语。</p>
+</li>
+<li><p>很快：它在“以读为主”的工作负载中速度特别快。因为读基本不需要同步</p>
+</li>
+</ol>
+<p><a href="https://zhuanlan.zhihu.com/p/59669985" target="_blank" rel="noopener">应用案例</a></p>
+<h2 id="Zookeeper原理简单介绍"><a href="#Zookeeper原理简单介绍" class="headerlink" title="Zookeeper原理简单介绍"></a>Zookeeper原理简单介绍</h2><p>Zookeeper最重要的概念就是znode，其实现原理也都是基于znode的增删改查等，我们从znode开始。</p>
+<h3 id="znode"><a href="#znode" class="headerlink" title="znode"></a>znode</h3><p>上文中我们也说了，znode非常像一个文件系统，根目录<code>/</code>、各个文件夹、又有子文件夹如图：<br>[站外图片上传中…(image-4cc377-1606224409982)]</p>
+<blockquote>
+<p>注意不像标准的文件系统，Zookeeper中的znode有自己的数据，也就是说每个（层）文件或者文件夹都可以绑定数据。这些数据包括状态、配置、路径、版本等信息（这些信息都极小），文件的每次更改都会记录版本号和对应的时间戳。<br>另外每个znode还有一个访问控制列表（ACL）来限制谁可以做什么。<br>znode有临时节点的概念，也就是客户端的一次连接中有效，会话结束时自动删除。</p>
+</blockquote>
+<h3 id="监听器watches"><a href="#监听器watches" class="headerlink" title="监听器watches"></a>监听器watches</h3><p>watche也是Zookeeper的一个非常重要的概念，想想如果我们想观察一个znode，不可能一直去查看这个znode，首先影响带宽（如果每个客户端都使用网络去查看），效率也很低。有了watch之后，我们可以对我们感兴趣的节点注册一个监听器，在该znode节点发生改变时，zookeeper会通知到我们。</p>
+<blockquote>
+<p>3.6.0 之前watch只有一次的有效期，3.6.0之后可以设置永久的、递归的watch，触发后不会被删除。</p>
+</blockquote>
+<h3 id="Zookeeper的共享存储模型"><a href="#Zookeeper的共享存储模型" class="headerlink" title="Zookeeper的共享存储模型"></a>Zookeeper的共享存储模型</h3><p>[站外图片上传中…(image-9e79b6-1606224409982)]  </p>
+<p>复制的数据库是包含整个数据树的内存中的数据库。更新被记录到磁盘以提高可恢复性，写操作在应用到内存中的数据库之前被序列化到磁盘。</p>
+<p>每个ZooKeeper服务器服务客户端。客户端连接到一个服务器来提交请求。读取请求来自每个服务器数据库的本地副本。更改服务状态的请求(写请求)由一致性协议处理，作为协议协议的一部分，所有来自客户端的写请求都被转发到一个称为leader的服务器上。zookeeper其余的服务器称为follow，接收来自leader的信息建议，并同意信息的传递。消息传递层负责在出现故障时替换leader，并将follow与leader同步。</p>
+<h2 id="zookeeper能力"><a href="#zookeeper能力" class="headerlink" title="zookeeper能力"></a>zookeeper能力</h2><p>zookeeper已实现如下功能：</p>
+<ul>
+<li><p>顺序一致性：来自客户端的更新将按照发送的顺序应用。</p>
+</li>
+<li><p>原子性：更新成功或失败。没有部分成功。</p>
+</li>
+<li><p>最终一致性： client不论连接到哪个Server，展示给它都是同一个视图，这是zookeeper最重要的性能。</p>
+</li>
+<li><p>可靠性：一旦应用了更新，它将从那时起一直存在，直到客户端覆盖该更新。</p>
+</li>
+<li><p>时效性：Zookeeper保证客户端将在一个时间间隔范围内获得服务器的更新信息，或者服务器失效的信息。但由于网络延时等原因，Zookeeper不能保证两个客户端能同时得到刚更新的数据，如果需要最新数据，应该在读数据之前调用sync()接口。 </p>
+</li>
+</ul>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h2><p>ZooKeeper的设计目标之一是提供一个非常简单的编程界面。因此，它仅支持下面这些操作：</p>
+<ul>
+<li>create ：在树中的某个位置创建一个节点</li>
+<li>delete： 删除一个节点</li>
+<li>exists： 判断某个节点是否存在</li>
+<li>get data: 获取某个节点绑定的数据</li>
+<li>set data: 设置某个节点的数据</li>
+<li>get children： 获取节点的子节点列表</li>
+<li>sync ：等待数据被传播，也就时同步服务端信息。</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/07/31/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E5%8D%81%E4%B8%89%E3%80%81%E7%BA%BF%E7%A8%8B%E6%B1%A0ThreadPoolExecutor%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" rel="next" title="十三、线程池ThreadPoolExecutor源码解析">
+                <i class="fa fa-chevron-left"></i> 十三、线程池ThreadPoolExecutor源码解析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/08/12/zookeeper%E4%B8%93%E9%A2%98/%E4%BA%8C%E3%80%81zookeeper%20API%E4%BB%8B%E7%BB%8D/" rel="prev" title="二、zookeeper API介绍">
+                二、zookeeper API介绍 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#介绍"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Zookeeper的设计目标"><span class="nav-number">1.1.</span> <span class="nav-text">Zookeeper的设计目标</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper原理简单介绍"><span class="nav-number">2.</span> <span class="nav-text">Zookeeper原理简单介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#znode"><span class="nav-number">2.1.</span> <span class="nav-text">znode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#监听器watches"><span class="nav-number">2.2.</span> <span class="nav-text">监听器watches</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Zookeeper的共享存储模型"><span class="nav-number">2.3.</span> <span class="nav-text">Zookeeper的共享存储模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zookeeper能力"><span class="nav-number">3.</span> <span class="nav-text">zookeeper能力</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用方法"><span class="nav-number">4.</span> <span class="nav-text">使用方法</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

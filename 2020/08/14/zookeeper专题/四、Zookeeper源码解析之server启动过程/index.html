@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="从源码中一步步分析server启动过程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="四、Zookeeper源码解析之server启动过程">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/14/zookeeper%E4%B8%93%E9%A2%98/%E5%9B%9B%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8Bserver%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="从源码中一步步分析server启动过程">
+<meta property="article:published_time" content="2020-08-14T11:12:14.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:54:22.005Z">
+<meta property="article:author" content="Chen Q">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/14/zookeeper专题/四、Zookeeper源码解析之server启动过程/"/>
+
+
+
+
+
+  <title>四、Zookeeper源码解析之server启动过程 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/08/14/zookeeper%E4%B8%93%E9%A2%98/%E5%9B%9B%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8Bserver%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">四、Zookeeper源码解析之server启动过程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-14T19:12:14+08:00">
+                2020-08-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/zookeeper%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">zookeeper专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  从源码中一步步分析server启动过程
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="QuorumPeerMain和ZooKeeperServerMain"><a href="#QuorumPeerMain和ZooKeeperServerMain" class="headerlink" title="QuorumPeerMain和ZooKeeperServerMain"></a>QuorumPeerMain和ZooKeeperServerMain</h2><p>我们在源码中可以找到这两个类，主要区别是一个是集群模式一个是独立模式。我们在后台启动并使用jps -l的时候会发现<br>kafka对应的进程主类是： org.apache.zookeeper.server.quorum.QuorumPeerMain<br>所以我们从QuorumPeerMain开始看</p>
+<h3 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h3><p>直接看源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    QuorumPeerMain main = <span class="keyword">new</span> QuorumPeerMain();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        main.initializeAndRun(args);   <span class="comment">// 这是主要逻辑</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        LOG.error(<span class="string">"Unexpected exception, exiting abnormally"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">    LOG.info(<span class="string">"Exiting normally"</span>);</span><br><span class="line">    ServiceUtils.requestSystemExit(ExitCode.EXECUTION_FINISHED.getValue());</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 初始化并启动</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initializeAndRun</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ConfigException, IOException, AdminServerException </span>&#123;</span><br><span class="line">    QuorumPeerConfig config = <span class="keyword">new</span> QuorumPeerConfig();</span><br><span class="line">    <span class="keyword">if</span> (args.length == <span class="number">1</span>) &#123;</span><br><span class="line">        config.parse(args[<span class="number">0</span>]);  <span class="comment">// 加载参数</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Start and schedule the the purge task</span></span><br><span class="line">    DatadirCleanupManager purgeMgr = <span class="keyword">new</span> DatadirCleanupManager(</span><br><span class="line">        config.getDataDir(),</span><br><span class="line">        config.getDataLogDir(),</span><br><span class="line">        config.getSnapRetainCount(),</span><br><span class="line">        config.getPurgeInterval());</span><br><span class="line">    purgeMgr.start();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (args.length == <span class="number">1</span> &amp;&amp; config.isDistributed()) &#123;</span><br><span class="line">        runFromConfig(config);  <span class="comment">// 集群模式</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        LOG.warn(<span class="string">"Either no config or no quorum defined in config, running in standalone mode"</span>);</span><br><span class="line">        <span class="comment">// there is only server in the quorum -- run as standalone</span></span><br><span class="line">        ZooKeeperServerMain.main(args);     <span class="comment">// 单机模式</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码中可以看到启动的主要步骤有三个：</p>
+<ol>
+<li>加载配置QuorumPeerConfig</li>
+<li>启动DatadirCleanupManager线程</li>
+<li>根据配置来判断是启动集群环境和单机环境。</li>
+</ol>
+<p>加载配置我们略过，主要是从文件中读取properties，我们重点看后面两个，因为我们环境中主要是集群环境</p>
+<h2 id="DatadirCleanupManager启动过程"><a href="#DatadirCleanupManager启动过程" class="headerlink" title="DatadirCleanupManager启动过程"></a>DatadirCleanupManager启动过程</h2><p>这个类通过使用指定的’autopurge.purgeInterval’来调度自动清除任务，从而管理快照和相应事务日志的清理。—官方说明<br>这个怎么理解呢？</p>
+<blockquote>
+<p>因为Zookeeper的修改操作（增删改）都会记录一个日志，另外Zookeeper每隔一段时间会生成一次快照，这些会持续化到硬盘的文件中，<br>所以当运行一段时间后，文件数量和快照会非常多，而我们这个类主要任务就是定时清理这些文件。我们接着看源码。</p>
+</blockquote>
+<h3 id="类结构"><a href="#类结构" class="headerlink" title="类结构"></a>类结构</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> PurgeTaskStatus purgeTaskStatus = PurgeTaskStatus.NOT_STARTED;  <span class="comment">// 状态： 未启动、已启动、完成三个状态</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> File snapDir;  <span class="comment">// 快照文件夹</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> File dataLogDir;   <span class="comment">// 数据日志文件夹</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> snapRetainCount;  <span class="comment">// 快照保存数量  默认是3</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> purgeInterval;   <span class="comment">// 清理间隔，也就是多久触发一次清理  默认是0</span></span><br><span class="line"><span class="keyword">private</span> Timer timer;            <span class="comment">// 定时器，负责单独起一个线程去清理</span></span><br></pre></td></tr></table></figure>
+<h3 id="清理过程"><a href="#清理过程" class="headerlink" title="清理过程"></a>清理过程</h3><p>主要是创建一个TimeTask的任务，复写run 方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="string">"Purge task started."</span>);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        PurgeTxnLog.purge(logsDir, snapsDir, snapRetainCount);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        LOG.error(<span class="string">"Error occurred while purging."</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">    LOG.info(<span class="string">"Purge task completed."</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 主要的清理逻辑</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">purge</span><span class="params">(File dataDir, File snapDir, <span class="keyword">int</span> num)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (num &lt; <span class="number">3</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(COUNT_ERR_MSG);</span><br><span class="line">    &#125;</span><br><span class="line">    FileTxnSnapLog txnLog = <span class="keyword">new</span> FileTxnSnapLog(dataDir, snapDir); </span><br><span class="line">    List&lt;File&gt; snaps = txnLog.findNValidSnapshots(num); <span class="comment">// 找到需要保留的文件</span></span><br><span class="line">    <span class="keyword">int</span> numSnaps = snaps.size();</span><br><span class="line">    <span class="keyword">if</span> (numSnaps &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        purgeOlderSnapshots(txnLog, snaps.get(numSnaps - <span class="number">1</span>)); <span class="comment">// 删除旧的文件</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 删除逻辑 过滤器</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyFileFilter</span> <span class="keyword">implements</span> <span class="title">FileFilter</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String prefix;</span><br><span class="line">    MyFileFilter(String prefix) &#123;</span><br><span class="line">        <span class="keyword">this</span>.prefix = prefix;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">accept</span><span class="params">(File f)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!f.getName().startsWith(prefix + <span class="string">"."</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (retainedTxnLogs.contains(f)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> fZxid = Util.getZxidFromName(f.getName(), prefix);</span><br><span class="line">        <span class="keyword">return</span> fZxid &lt; leastZxidToBeRetain;  <span class="comment">// 重点代码，删除fZxid 比最后一个有效文件小的</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line">File[] logs = txnLog.getDataDir().listFiles(<span class="keyword">new</span> MyFileFilter(PREFIX_LOG));</span><br><span class="line"><span class="comment">// 删除文件</span></span><br><span class="line"><span class="keyword">for</span> (File f : files) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!f.delete()) &#123;</span><br><span class="line">       ....</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里说一下Zookeeper的文件结构，两个重要的文件夹，一个是dataDir 一个是dataLogDir（如果没有配置的话，默认是dataDir），分别是快照(也就是整个内存中的树形节点数据)和事物日志。<br>所以上面的的过滤器，会匹配对应的前缀log.和snapshot.</p>
+<blockquote>
+<p>手动清理  ./zkCleanup.sh 其实主要原理就是调用这个类 org.apache.zookeeper.server.PurgeTxnLog “$ZOODATALOGDIR” “$ZOODATADIR” $*</p>
+</blockquote>
+<h2 id="单机启动过程"><a href="#单机启动过程" class="headerlink" title="单机启动过程"></a>单机启动过程</h2><p>参考<a href="https://zhuanlan.zhihu.com/p/139496782" target="_blank" rel="noopener">Zookeeper单机模式启动</a><br>单机启动过程中main函数与QuorumPeerMain一样，都是调用initializeAndRun–&gt;初始化配置ServerConfig（内部使用QuorumPeerConfig，再复制属性）再启动<br>看主要启动逻辑runFromConfig：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">LOG.info(<span class="string">"Starting server"</span>);</span><br><span class="line">FileTxnSnapLog txnLog = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        metricsProvider = MetricsProviderBootstrap.startMetricsProvider(</span><br><span class="line">            config.getMetricsProviderClassName(),</span><br><span class="line">            config.getMetricsProviderConfiguration()); <span class="comment">// 启动度量程序，可以参考metrics</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (MetricsProviderLifeCycleException error) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Cannot boot MetricsProvider "</span> + config.getMetricsProviderClassName(), error);</span><br><span class="line">    &#125;</span><br><span class="line">    ServerMetrics.metricsProviderInitialized(metricsProvider);</span><br><span class="line">    txnLog = <span class="keyword">new</span> FileTxnSnapLog(config.dataLogDir, config.dataDir); <span class="comment">// 初始化事务日志和快照管理</span></span><br><span class="line">    JvmPauseMonitor jvmPauseMonitor = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (config.jvmPauseMonitorToRun) &#123;</span><br><span class="line">        jvmPauseMonitor = <span class="keyword">new</span> JvmPauseMonitor(config);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 创建一个 server</span></span><br><span class="line">    <span class="keyword">final</span> ZooKeeperServer zkServer = <span class="keyword">new</span> ZooKeeperServer(jvmPauseMonitor, txnLog, config.tickTime, config.minSessionTimeout, config.maxSessionTimeout, config.listenBacklog, <span class="keyword">null</span>, config.initialConfig);</span><br><span class="line">    <span class="comment">// 设置状态</span></span><br><span class="line">    txnLog.setServerStats(zkServer.serverStats());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置服务结束钩子   也就是ZooKeeperServerShutdownHandler ，处理结束任务会触发</span></span><br><span class="line">    <span class="keyword">final</span> CountDownLatch shutdownLatch = <span class="keyword">new</span> CountDownLatch(<span class="number">1</span>);</span><br><span class="line">    zkServer.registerServerShutdownHandler(<span class="keyword">new</span> ZooKeeperServerShutdownHandler(shutdownLatch));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 启动AdminServer ，默认会加载JettyAdminServer，如果没有就加载一个空的DummyAdminServer</span></span><br><span class="line">    adminServer = AdminServerFactory.createAdminServer();</span><br><span class="line">    adminServer.setZooKeeperServer(zkServer);</span><br><span class="line">    adminServer.start();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> needStartZKServer = <span class="keyword">true</span>;</span><br><span class="line">    <span class="comment">// 配置连接的服务框架并启动</span></span><br><span class="line">    <span class="keyword">if</span> (config.getClientPortAddress() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        cnxnFactory = ServerCnxnFactory.createFactory();</span><br><span class="line">        cnxnFactory.configure(config.getClientPortAddress(), config.getMaxClientCnxns(), config.getClientPortListenBacklog(), <span class="keyword">false</span>);</span><br><span class="line">        cnxnFactory.startup(zkServer);</span><br><span class="line">        <span class="comment">// zkServer has been started. So we don't need to start it again in secureCnxnFactory.</span></span><br><span class="line">        needStartZKServer = <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 配置安全</span></span><br><span class="line">    <span class="keyword">if</span> (config.getSecureClientPortAddress() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        secureCnxnFactory = ServerCnxnFactory.createFactory();</span><br><span class="line">        secureCnxnFactory.configure(config.getSecureClientPortAddress(), config.getMaxClientCnxns(), config.getClientPortListenBacklog(), <span class="keyword">true</span>);</span><br><span class="line">        secureCnxnFactory.startup(zkServer, needStartZKServer);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 定时清除容器节点和临时节点</span></span><br><span class="line">    containerManager = <span class="keyword">new</span> ContainerManager(</span><br><span class="line">        zkServer.getZKDatabase(),</span><br><span class="line">        zkServer.firstProcessor,</span><br><span class="line">        Integer.getInteger(<span class="string">"znode.container.checkIntervalMs"</span>, (<span class="keyword">int</span>) TimeUnit.MINUTES.toMillis(<span class="number">1</span>)),</span><br><span class="line">        Integer.getInteger(<span class="string">"znode.container.maxPerMinute"</span>, <span class="number">10000</span>),</span><br><span class="line">        Long.getLong(<span class="string">"znode.container.maxNeverUsedIntervalMs"</span>, <span class="number">0</span>)</span><br><span class="line">    );</span><br><span class="line">    containerManager.start();</span><br><span class="line">    ZKAuditProvider.addZKStartStopAuditLog();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Watch status of ZooKeeper server. It will do a graceful shutdown</span></span><br><span class="line">    <span class="comment">// if the server is not running or hits an internal error.</span></span><br><span class="line">    shutdownLatch.await();</span><br><span class="line"></span><br><span class="line">    shutdown();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>步骤解析：</p>
+<ol>
+<li>启动度量程序，使用反射的方式根据配置中的类名创建一个实例，监控指标，默认是DefaultMetricsProvider  </li>
+<li>创建结束钩子</li>
+<li>创建一个AdminServer 用来管理ZooKeeperServer。AdminServer是3.5.0版本中新增特性，是一个内置的Jettry服务，它提供了一个HTTP接口为四字母单词命令。默认的，服务被启动在8080端口，并且命令被发起通过URL “/commands/[command name]”,例如，<a href="http://localhost:8080/commands/stat" target="_blank" rel="noopener">http://localhost:8080/commands/stat</a></li>
+<li>配置连接的服务框架ServerCnxnFactory并启动，这是核心服务，之前是NIO实现的，后面的版本增加Netty框架实现，后面继续分析其启动过程</li>
+<li>配置安全相关</li>
+<li>配置定时清除容器节点和临时节点</li>
+<li>等待结束<h2 id="集群启动过程"><a href="#集群启动过程" class="headerlink" title="集群启动过程"></a>集群启动过程</h2>集群模式的入口是 runFromConfig(config); 其实原理和单机模式类似，前面也是执行一些度量监控子进程，我们来看核心代码<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!getView().containsKey(myid)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"My id "</span> + myid + <span class="string">" not in the peer list"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    loadDataBase();     <span class="comment">// 加载数据</span></span><br><span class="line">    startServerCnxnFactory(); <span class="comment">// 启动网络服务</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        adminServer.start();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (AdminServerException e) &#123;</span><br><span class="line">        LOG.warn(<span class="string">"Problem starting AdminServer"</span>, e);</span><br><span class="line">        System.out.println(e);</span><br><span class="line">    &#125;</span><br><span class="line">    startLeaderElection();</span><br><span class="line">    startJvmPauseMonitor();</span><br><span class="line">    <span class="keyword">super</span>.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>加载数据，也就是持久化在文件里面的数据</li>
+<li>启动io服务</li>
+<li>启动AdminServer</li>
+<li>进行主从选举</li>
+<li>启动一个简单的线程，健康程序是否异常</li>
+</ol>
+<p>这个几个过程和独立模式有点类似，主要不同的地方就是，多了主从选举，后续我们队各个过程惊醒梳理</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/08/13/zookeeper%E4%B8%93%E9%A2%98/%E4%B8%89%E3%80%81%E5%88%A9%E7%94%A8Zookeeper%E5%AE%9E%E7%8E%B0java%E4%B8%BB%E4%BB%8E%E6%A8%A1%E5%BC%8F/" rel="next" title="三、利用Zookeeper实现java主从模式">
+                <i class="fa fa-chevron-left"></i> 三、利用Zookeeper实现java主从模式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E5%85%AD%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%80%89%E4%B8%BE%E4%B8%AD%E7%9A%84%E9%80%9A%E4%BF%A1/" rel="prev" title="六、Zookeeper源码解析之选举中的通信">
+                六、Zookeeper源码解析之选举中的通信 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#QuorumPeerMain和ZooKeeperServerMain"><span class="nav-number">1.</span> <span class="nav-text">QuorumPeerMain和ZooKeeperServerMain</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#启动"><span class="nav-number">1.1.</span> <span class="nav-text">启动</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DatadirCleanupManager启动过程"><span class="nav-number">2.</span> <span class="nav-text">DatadirCleanupManager启动过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#类结构"><span class="nav-number">2.1.</span> <span class="nav-text">类结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#清理过程"><span class="nav-number">2.2.</span> <span class="nav-text">清理过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#单机启动过程"><span class="nav-number">3.</span> <span class="nav-text">单机启动过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群启动过程"><span class="nav-number">4.</span> <span class="nav-text">集群启动过程</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

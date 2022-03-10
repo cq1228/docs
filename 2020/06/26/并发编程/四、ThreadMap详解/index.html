@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ThreadMap," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="多线程访问同一个变量容易引发并发问题，但在每个线程定义同一个变量又不太现实，ThreadLocal的出现就解决了这个问题，Thread为每个线程创建了一个线程变量副本，每个线程操作的数据都是属于自己的，不存在安全问题">
+<meta property="og:type" content="article">
+<meta property="og:title" content="四、ThreadMap详解">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/06/26/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E5%9B%9B%E3%80%81ThreadMap%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="多线程访问同一个变量容易引发并发问题，但在每个线程定义同一个变量又不太现实，ThreadLocal的出现就解决了这个问题，Thread为每个线程创建了一个线程变量副本，每个线程操作的数据都是属于自己的，不存在安全问题">
+<meta property="og:image" content="https://chenqiongxm.gitlab.io/images/thread/Thread%E5%92%8CThreadLocal.png">
+<meta property="og:image" content="https://chenqiongxm.gitlab.io/images/thread/ThreadLocal%E5%8E%9F%E7%90%86%E5%9B%BE.png">
+<meta property="article:published_time" content="2020-06-26T13:13:35.000Z">
+<meta property="article:modified_time" content="2020-07-06T15:28:29.256Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="ThreadMap">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://chenqiongxm.gitlab.io/images/thread/Thread%E5%92%8CThreadLocal.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/06/26/并发编程/四、ThreadMap详解/"/>
+
+
+
+
+
+  <title>四、ThreadMap详解 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/06/26/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E5%9B%9B%E3%80%81ThreadMap%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">四、ThreadMap详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-06-26T21:13:35+08:00">
+                2020-06-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index">
+                    <span itemprop="name">并发编程</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  多线程访问同一个变量容易引发并发问题，但在每个线程定义同一个变量又不太现实，ThreadLocal的出现就解决了这个问题，Thread为每个线程创建了一个线程变量副本，每个线程操作的数据都是属于自己的，不存在安全问题
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>多线程访问同一个变量容易引发并发问题，但在每个线程定义同一个变量又不太现实，ThreadLocal的出现就解决了这个问题，Thread为每个线程创建了一个线程变量副本，每个线程操作的数据都是属于自己的，不存在安全问题</p>
+<hr>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">public class ThreadLocalTest</span><br><span class="line">&#123;</span><br><span class="line">	static ThreadLocal&lt;String&gt;localVal&#x3D;new ThreadLocal&lt;&gt;();</span><br><span class="line">	static ThreadLocal&lt;Integer&gt;localInt&#x3D;new ThreadLocal&lt;&gt;();</span><br><span class="line"></span><br><span class="line">	static void print(String str)&#123;</span><br><span class="line">        &#x2F;&#x2F; 读取本地变量</span><br><span class="line">		System.out.println(str+&quot;:&quot;+localVal.get());</span><br><span class="line">        &#x2F;&#x2F; 移除本地变量</span><br><span class="line">		localVal.remove();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public static void main(String[] args) throws InterruptedException</span><br><span class="line">	&#123;</span><br><span class="line">		Thread threadOne&#x3D;new Thread(()-&gt;&#123;</span><br><span class="line">            &#x2F;&#x2F; 设置本地变量值</span><br><span class="line">			localVal.set(&quot;threadOne local&quot;);</span><br><span class="line">			localInt.set(123);</span><br><span class="line">			print(&quot;threadOne&quot;);</span><br><span class="line">            &#x2F;&#x2F; 读取本地变量</span><br><span class="line">			System.out.println(&quot;threadOne remove after:&quot;+localVal.get()+localInt.get());</span><br><span class="line">		&#125;);</span><br><span class="line">		Thread threadTwo&#x3D;new Thread(()-&gt;&#123;</span><br><span class="line">            &#x2F;&#x2F; 设置本地变量值</span><br><span class="line">			localVal.set(&quot;threadTwo local&quot;);</span><br><span class="line">			print(&quot;threadOne&quot;);</span><br><span class="line">			System.out.println(&quot;threadOne remove after:&quot;+localVal.get());</span><br><span class="line">		&#125;);</span><br><span class="line">		threadOne.start();</span><br><span class="line">		threadTwo.start();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最终输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">threadOne:threadTwo local</span><br><span class="line">threadOne:threadOne local</span><br><span class="line">threadOne remove after:null</span><br><span class="line">threadOne remove after:null123</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如上我们明明在set()方法上设置了值，并使用get()获取，按照以往，都是以最后一次set为准，那这里为什么读取的两个线程不一样呢？很自然我们就想到了，它的set()和get()方法具有特殊性。</p>
+</blockquote>
+<h2 id="原理分析"><a href="#原理分析" class="headerlink" title="原理分析"></a>原理分析</h2><p><img src="/images/thread/Thread%E5%92%8CThreadLocal.png" alt="Thread和ThreadLocal关系图"><br>Thread类中有一个threadLocals和inheritableThreadLocals，他们都是ThreadLocalMap类（类似HashMap），默认情况下都为null，什么时候改变，我们看下源代码：<br>set方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public void set(T value) &#123;</span><br><span class="line">    Thread t &#x3D; Thread.currentThread();&#x2F;&#x2F; 获取当前变量</span><br><span class="line">    ThreadLocalMap map &#x3D; getMap(t);  &#x2F;&#x2F; 将当前变量作为参数去找到线程变量</span><br><span class="line">    if (map !&#x3D; null)                 &#x2F;&#x2F; 如果存在则获取，不存在则初始化一个map</span><br><span class="line">        map.set(this, value);       &#x2F;&#x2F; 讲当前ThreadLocal变量this作为key放入map</span><br><span class="line">    else</span><br><span class="line">        createMap(t, value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进一步看 getMap(t)方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ThreadLocalMap getMap(Thread t) &#123;</span><br><span class="line">    return t.threadLocals;   获取当前线程的threadLocals</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从这段代码，我们就知道，我们真正取到的变量是线程中的变量，createMap也是如此:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">void createMap(Thread t, T firstValue) &#123;</span><br><span class="line">    t.threadLocals &#x3D; new ThreadLocalMap(this, firstValue);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再看get方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public T get() &#123;</span><br><span class="line">    Thread t &#x3D; Thread.currentThread();</span><br><span class="line">    ThreadLocalMap map &#x3D; getMap(t);</span><br><span class="line">    if (map !&#x3D; null) &#123;</span><br><span class="line">        ThreadLocalMap.Entry e &#x3D; map.getEntry(this);</span><br><span class="line">        if (e !&#x3D; null) &#123;</span><br><span class="line">            @SuppressWarnings(&quot;unchecked&quot;)</span><br><span class="line">            T result &#x3D; (T)e.value;</span><br><span class="line">            return result;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return setInitialValue();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>发现get方法与set方法差不多，都是从线程变量中以ThreadLocal作为key获取value值。<br>到这基本就已经了解了ThreadLocal的基本用法了。<br><img src="/images/thread/ThreadLocal%E5%8E%9F%E7%90%86%E5%9B%BE.png" alt="ThreadLocal原理图"></p>
+<blockquote>
+<p>细心的同学们肯定发现了一个问题，inheritableThreadLocals还没讲呢，这是什么？</p>
+</blockquote>
+<h2 id="inheritableThreadLocals"><a href="#inheritableThreadLocals" class="headerlink" title="inheritableThreadLocals"></a>inheritableThreadLocals</h2><p>问题： ThreadLocal不支持继承性（注意这里的继承不是说父类子类的继承），而是说主线程和子线程中ThreadLocal对各自是不可见的。<br>还是上面的例子，不过在随后加上下面两行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(&quot;main Int:&quot; +localVal.get());</span><br><span class="line">System.out.println(&quot;main str:&quot;+localInt.get());</span><br></pre></td></tr></table></figure>
+<p>程序无论怎么运行，都会打印</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">main Int:null</span><br><span class="line">main str:null</span><br></pre></td></tr></table></figure>
+<p>也就是说，子线程的本地变量对父线程不可见，同理父线程变量对子线程不可见。  </p>
+<p>子线程的本地变量对父线程不可见，可以理解，类似父类子类的关系，但父线程的线程变量对子线程可见还是蛮常见的，InheritableThreadLocal就是为此设计的。<br>查看源码：InheritableThreadLocal继承ThreadLocal并重写了一下三个方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">protected T childValue(T parentValue) &#123;</span><br><span class="line">    return parentValue;</span><br><span class="line">&#125;</span><br><span class="line">ThreadLocalMap getMap(Thread t) &#123;</span><br><span class="line">    return t.inheritableThreadLocals;</span><br><span class="line">&#125;</span><br><span class="line">void createMap(Thread t, T firstValue) &#123;</span><br><span class="line">    t.inheritableThreadLocals &#x3D; new ThreadLocalMap(this, firstValue);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也就是说set(T value)和get()方法是与ThreadLocal一致的，不同的地方在于map的获取与设置，操作的不再是threadLocals这个值，而是inheritableThreadLocals；<br>然后，它是怎么共享的inheritableThreadLocals的呢？其实原理比较简单，就是在构造线程的时候将当前线程（也就是父线程）的变量赋值到新创建的线程。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">public Thread(Runnable target) &#123;</span><br><span class="line">    init(null, target, &quot;Thread-&quot; + nextThreadNum(), 0); &#x2F;&#x2F; 初始化</span><br><span class="line">&#125;</span><br><span class="line">private void init(ThreadGroup g, Runnable target, String name,</span><br><span class="line">                    long stackSize) &#123;</span><br><span class="line">    init(g, target, name, stackSize, null, true);  &#x2F;&#x2F; 初始化</span><br><span class="line">&#125;</span><br><span class="line">    private void init(ThreadGroup g, Runnable target, String name,long stackSize, AccessControlContext acc, boolean inheritThreadLocals) &#123;</span><br><span class="line">    ...</span><br><span class="line">if (inheritThreadLocals &amp;&amp; parent.inheritableThreadLocals !&#x3D; null)</span><br><span class="line">        this.inheritableThreadLocals &#x3D;ThreadLocal.createInheritedMap(parent.inheritableThreadLocals);&#x2F;&#x2F; 核心代码，如果父线程inheritableThreadLocals不为空，则使用父线程的inheritableThreadLocals去初始化新创建线程的本地变量</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; 下面这段代码就是将key、value值进行一个复制</span><br><span class="line">private ThreadLocalMap(ThreadLocalMap parentMap) &#123;</span><br><span class="line">        Entry[] parentTable &#x3D; parentMap.table;</span><br><span class="line">        int len &#x3D; parentTable.length;</span><br><span class="line">        setThreshold(len);</span><br><span class="line">        table &#x3D; new Entry[len];</span><br><span class="line"></span><br><span class="line">        for (int j &#x3D; 0; j &lt; len; j++) &#123;</span><br><span class="line">            Entry e &#x3D; parentTable[j];</span><br><span class="line">            if (e !&#x3D; null) &#123;</span><br><span class="line">                @SuppressWarnings(&quot;unchecked&quot;)</span><br><span class="line">                ThreadLocal&lt;Object&gt; key &#x3D; (ThreadLocal&lt;Object&gt;) e.get();</span><br><span class="line">                if (key !&#x3D; null) &#123;</span><br><span class="line">                    Object value &#x3D; key.childValue(e.value);</span><br><span class="line">                    Entry c &#x3D; new Entry(key, value);</span><br><span class="line">                    int h &#x3D; key.threadLocalHashCode &amp; (len - 1);</span><br><span class="line">                    while (table[h] !&#x3D; null)</span><br><span class="line">                        h &#x3D; nextIndex(h, len);</span><br><span class="line">                    table[h] &#x3D; c;</span><br><span class="line">                    size++;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><em>其实由上面的代码可以看出，父线程的本地变量到子线程可见，是一个深拷贝，也就是说他们的值是不同步的，如果一方修改，那就不一样了。</em></strong></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/ThreadMap/" rel="tag"># ThreadMap</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/06/24/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%B8%89%E3%80%81%E5%8E%9F%E5%AD%90%E7%9B%B8%E5%85%B3%E7%B1%BB%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" rel="next" title="三、AtomicLong、LongAdder、LongAccumulator源码解读">
+                <i class="fa fa-chevron-left"></i> 三、AtomicLong、LongAdder、LongAccumulator源码解读
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/06/28/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%BA%94%E3%80%81AQS%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/" rel="prev" title="五、AQS源码解读">
+                五、AQS源码解读 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#实例"><span class="nav-number">1.</span> <span class="nav-text">实例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理分析"><span class="nav-number">2.</span> <span class="nav-text">原理分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#inheritableThreadLocals"><span class="nav-number">3.</span> <span class="nav-text">inheritableThreadLocals</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

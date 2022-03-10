@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="jedis," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Redis提供了客户端相关的API对其状态进行管理，我们可以利用这些api来更好的运维">
+<meta property="og:type" content="article">
+<meta property="og:title" content="三、redis客户端管理">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/11/20/redis%E4%B8%93%E9%A2%98/%E4%B8%89%E3%80%81redis%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="Redis提供了客户端相关的API对其状态进行管理，我们可以利用这些api来更好的运维">
+<meta property="article:published_time" content="2020-11-20T13:13:21.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:38:35.417Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="jedis">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/11/20/redis专题/三、redis客户端管理/"/>
+
+
+
+
+
+  <title>三、redis客户端管理 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/11/20/redis%E4%B8%93%E9%A2%98/%E4%B8%89%E3%80%81redis%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%AE%A1%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">三、redis客户端管理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-11-20T21:13:21+08:00">
+                2020-11-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/redis%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">redis专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  Redis提供了客户端相关的API对其状态进行管理，我们可以利用这些api来更好的运维
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Redis提供了客户端相关的API对其状态进行管理，我们可以利用这些api来更好的运维比如：</p>
+<ol>
+<li>客户端连接数超过限制</li>
+<li>客户端连接数缓冲区异常（可能客户端发了一个异常的请求，超过阈值）</li>
+<li>客户端长时间不活动（超过idle时间，可主动断开）</li>
+<li>一直阻塞（可以监控正在执行那个连接的什么命令）</li>
+</ol>
+<blockquote>
+<p>本文参考《Redis开发与运维》</p>
+</blockquote>
+<h2 id="客户端通信协议"><a href="#客户端通信协议" class="headerlink" title="客户端通信协议"></a>客户端通信协议</h2><p>Redis使用RESP(Redis Serialization Protocol)实现客户端与服务端的交互，这种协议简单高效。比如命令 set hello world：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">*3</span><br><span class="line"><span class="variable">$3</span></span><br><span class="line">SET</span><br><span class="line"><span class="variable">$5</span></span><br><span class="line">hello</span><br><span class="line"><span class="variable">$5</span></span><br><span class="line">world</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>命令格式<br><code>&lt;参数数量&gt;CRLF  $&lt;参数1的字节数量&gt; CRLF &lt;参数1&gt;CRLF</code><br>比如上的的命令，一共3个参数，分别是set、hello、world，其长度分别为3、5、5</p>
+</li>
+<li><p>返回格式</p>
+<ul>
+<li>状态回复：在RESP中的第一个字节为“+”</li>
+<li>错误回复：第一个字节为“-”</li>
+<li>整数回复：第一个字节为“：”</li>
+<li>字符串回复：第一个字节为“$”</li>
+<li>多条字符串回复：第一个字节为“*”</li>
+</ul>
+</li>
+</ol>
+<p>可以使用telnet命令测试，或者实现一个socket来模拟</p>
+<h2 id="java客户端"><a href="#java客户端" class="headerlink" title="java客户端"></a>java客户端</h2><p>客户端操作比较简单重点关注两点：</p>
+<ol>
+<li>每次执行完不需要连接的时候需要关闭连接</li>
+<li>Jedis的连接池使用方法</li>
+</ol>
+<h2 id="客户端API"><a href="#客户端API" class="headerlink" title="客户端API"></a>客户端API</h2><p><code>client list</code> 获取所有客户端列表,返回结果为多行数据，每一行代表客户端的连接信息</p>
+<ul>
+<li><p><strong>标识</strong>： id(客户端唯一标识)、addr(ip和端口)、fd(socket的文件描述符，如果是1代表是内部的伪客户端)、name(名称，可以设置)</p>
+</li>
+<li><p><strong>输入缓冲区</strong>：qbuf、qbuf-free ，这个的作用是将客户端发送的命令临时保存，同时Redis会从输入缓冲区拉取命令并执行。没有规定大小，但有最大值1G，如果超过，则会断开连接，而且如果所有连接的缓冲区总和超过了总的内存限制，则会产生数据丢失、OOM的情况。</p>
+<blockquote>
+<p>主要原因是，redis处理速度跟不上命令的速度，比如包含了大量的bigkey，如何解决呢？</p>
+</blockquote>
+<ol>
+<li>通过定期执行client list命令，收集qbuf和qbuf-free找到异常的连接记录并分析,找到有问题的客户端（速度比较慢，可能阻塞）。</li>
+<li>通过info clients 命令找到最大的输入缓冲区（无法精准定位到具体客户端）。</li>
+</ol>
+</li>
+<li><p><strong>输出缓冲区</strong>：obl、oll、omem，同输入缓冲区一样，它的作用是保存执行的结果。但不同的是，可以设置client-output-buffer-limit，提供了更多的选项，内部使用动态缓冲区和固定缓冲区结合实现，obl代表固定缓冲区的长度(对象的个数，而不是字节大小)，oll代表动态缓冲区列表的长度，omem代表使用的字节数。</p>
+  <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ config get client-output-buffer-limit</span><br><span class="line">1) <span class="string">"client-output-buffer-limit"</span></span><br><span class="line">2) <span class="string">"normal 0 0 0 slave 268435456 67108864 60 pubsub 33554432 8388608 60"</span></span><br><span class="line"><span class="comment"># &lt;class&gt; &lt;hard limit&gt; &lt;soft limit&gt; &lt;soft seconds&gt; </span></span><br><span class="line"><span class="comment"># normal 0 0 0  </span></span><br><span class="line"><span class="comment"># slave 24M 64M 60</span></span><br><span class="line"><span class="comment"># pubsub 32M 8M 60</span></span><br></pre></td></tr></table></figure>
+
+<p>  上面代表了三组，分别是普通客户端、slave客户端、pubsub发布订阅客户端, hard limit 表示缓冲区超过了该值，立即关闭，soft表示，超过了该值多长时间才关闭。</p>
+<blockquote>
+<p>处理方法与输入缓冲区类似，需要限制普通客户端的缓冲区，比如高并发下的monitor命令，但另外需要适当增大slave的输出缓冲区，如果master节点写入过大， slave如果缓冲区溢出，会导致复制重连。</p>
+</blockquote>
+</li>
+<li><p><strong>客户端的存活状态</strong>：age、idle分表表示客户端已连接的时间和空闲时间（距离上一次操作）</p>
+</li>
+<li><p><strong>客户端的限制</strong>：maxclients 和 timeout，一旦超过最大连接数，新的连接将被拒绝（注意连接泄露）可以使用<code>config get[set] ：maxclients</code>查看或设置，使用<code>info clients</code>查看当前连接数。timeout用来限制连接的最大空闲时间，也就是上面的idle最大值，如果超过则会断开，0表示不限制。</p>
+</li>
+<li><p><strong>客户端类型</strong>：flag=S、N、O分别代表slave、普通客户端、monitor命令。其他可能的状态：</p>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>表示的类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>N</td>
+<td>普通客户端</td>
+</tr>
+<tr>
+<td>M</td>
+<td>master节点</td>
+</tr>
+<tr>
+<td>S</td>
+<td>slave节点</td>
+</tr>
+<tr>
+<td>O</td>
+<td>当前客户端正在执行monitor命令</td>
+</tr>
+<tr>
+<td>b</td>
+<td>当前客户端正在等待阻塞</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>GETNAME 获取当前连接的名字 ID 获取当前连接的ID，每个客户端都有唯一的ID</p>
+</li>
+<li><p><strong>主动关闭客户端</strong>：<code>client kill &lt;ip&gt;:&lt;port&gt;</code></p>
+</li>
+<li><p>暂停客户端：<code>client pause &lt;timeout&gt;</code> 暂停（阻塞）客户端一定时间，注意这个时候所有普通和发布订阅客户端都将被阻塞，这是一个很危险的操作。</p>
+</li>
+<li><p><strong>monitor</strong> 监控redis状态，能够监控所有客户端的命令，一旦redis并发过大，那么该监控客户端的输出缓冲区将会非常大。</p>
+</li>
+<li><p><strong>info stats</strong>：除了info clients命令和client list，<code>info stats</code>也有关于客户端的状态信息</p>
+</li>
+</ul>
+<h2 id="客户端常见异常"><a href="#客户端常见异常" class="headerlink" title="客户端常见异常"></a>客户端常见异常</h2><p>在使用客户端的时候，无论是客户端还是服务端，使用不当就会产生一些问题</p>
+<ol>
+<li><p>无法获取到连接</p>
+<ul>
+<li>客户端侧连接池配置过小，导致无法拿到连接</li>
+<li>客户端没有正确使用连接池，比如没有释放</li>
+<li>客户端执行了慢查询，导致无法释放资源</li>
+<li>服务端正在执行阻塞，导致命令或连接超时</li>
+</ul>
+</li>
+<li><p>读写超时或客户端连接超时 ：</p>
+<ul>
+<li>读写时间设置过短</li>
+<li>命令不合理，导致执行时间超过阈值</li>
+<li>网络不正常</li>
+<li>redis自身阻塞</li>
+</ul>
+</li>
+<li><p>客户端缓冲区异常：</p>
+<ul>
+<li>输出缓冲区满，比如用get命令获取一个超大的数据，但配置的阈值较小</li>
+<li>长时间空闲连接，被断开</li>
+<li>不正常的并发操作连接</li>
+</ul>
+</li>
+</ol>
+<h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><ol>
+<li><p>Redis内存突增，主节点内存达到maxmemory</p>
+<ul>
+<li>现象：客户端无法则正常调用</li>
+<li>原因：1.大量数据写入，主从复制出现问题，2. 缓冲区不正常，可以排查（monitor命令等）</li>
+</ul>
+</li>
+<li><p>客户端周期性的超时</p>
+<ul>
+<li>通过观察慢查询日志记录，发现只要有慢查询就会有大量连接超时。应尽量减少慢查询</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/jedis/" rel="tag"># jedis</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/10/18/redis%E4%B8%93%E9%A2%98/%E4%BA%8C%E3%80%81redis%E9%AB%98%E7%BA%A7%E6%8A%80%E5%B7%A7/" rel="next" title="二、redis高级技巧">
+                <i class="fa fa-chevron-left"></i> 二、redis高级技巧
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/11/21/redis%E4%B8%93%E9%A2%98/%E5%9B%9B%E3%80%81redis%E6%8C%81%E4%B9%85%E5%8C%96/" rel="prev" title="四、redis持久化">
+                四、redis持久化 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#客户端通信协议"><span class="nav-number">1.</span> <span class="nav-text">客户端通信协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#java客户端"><span class="nav-number">2.</span> <span class="nav-text">java客户端</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#客户端API"><span class="nav-number">3.</span> <span class="nav-text">客户端API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#客户端常见异常"><span class="nav-number">4.</span> <span class="nav-text">客户端常见异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">5.</span> <span class="nav-text">案例</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

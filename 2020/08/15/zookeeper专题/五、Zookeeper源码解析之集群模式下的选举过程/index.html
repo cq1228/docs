@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="在集群启动过程代码分析的时候我们看到，有一个群首选举的过程，接下来我们跟着源码来探究其选举流程和原则。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="五、Zookeeper源码解析之集群模式下的选举过程">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E4%BA%94%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E9%80%89%E4%B8%BE%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="在集群启动过程代码分析的时候我们看到，有一个群首选举的过程，接下来我们跟着源码来探究其选举流程和原则。">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-add0982de1467d1b.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-9fc1310ea594a6f4.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-f6673b8ec306f5c6.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-67ea16ed0b717098.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="article:published_time" content="2020-08-15T11:12:14.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:55:42.578Z">
+<meta property="article:author" content="Chen Q">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/23765437-add0982de1467d1b.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/08/15/zookeeper专题/五、Zookeeper源码解析之集群模式下的选举过程/"/>
+
+
+
+
+
+  <title>五、Zookeeper源码解析之集群模式下的选举过程 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E4%BA%94%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E9%80%89%E4%B8%BE%E8%BF%87%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">五、Zookeeper源码解析之集群模式下的选举过程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-15T19:12:14+08:00">
+                2020-08-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/zookeeper%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">zookeeper专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  在集群启动过程代码分析的时候我们看到，有一个群首选举的过程，接下来我们跟着源码来探究其选举流程和原则。
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="选举主流程"><a href="#选举主流程" class="headerlink" title="选举主流程"></a>选举主流程</h2><p>上一篇文章中我们简要的介绍了集群的启动过程，主要有两步涉及的群主选举</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    loadDataBase();</span><br><span class="line">    startServerCnxnFactory();</span><br><span class="line">    adminServer.start();</span><br><span class="line">    startLeaderElection(); <span class="comment">// 开启主节点选举</span></span><br><span class="line">    <span class="keyword">super</span>.start();  <span class="comment">// 本线程启动</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再深入代码发现FastLeaderElection里面也是多个Thread类，所以这两个步骤很多过程是并行执行的。我们先看第一步中，串行部分：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">startLeaderElection</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (getPeerState() == ServerState.LOOKING) &#123;</span><br><span class="line">            currentVote = <span class="keyword">new</span> Vote(myid, getLastLoggedZxid(), getCurrentEpoch()); <span class="comment">// 第一启动，创建一个选票。</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        ....<span class="comment">// 省略</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 创建选举算法，其实应该是开启选举（多个线程配合构成了一个后台选举流程）</span></span><br><span class="line">    <span class="keyword">this</span>.electionAlg = createElectionAlgorithm(electionType);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">protected</span> Election <span class="title">createElectionAlgorithm</span><span class="params">(<span class="keyword">int</span> electionAlgorithm)</span> </span>&#123;</span><br><span class="line">        Election le = <span class="keyword">null</span>;</span><br><span class="line">        <span class="comment">//<span class="doctag">TODO:</span> use a factory rather than a switch</span></span><br><span class="line">        <span class="comment">// 从上面看，目前只有一种该选举算法，其他的都是待开发状态的。</span></span><br><span class="line">        <span class="keyword">switch</span> (electionAlgorithm) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">"Election Algorithm 1 is not supported."</span>);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">"Election Algorithm 2 is not supported."</span>);</span><br><span class="line">        <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">            QuorumCnxManager qcm = createCnxnManager();  <span class="comment">// 专门用于选举通信的管理器</span></span><br><span class="line">            QuorumCnxManager oldQcm = qcmRef.getAndSet(qcm); <span class="comment">// 使用原子类，保证线程安全，并获取之前管理器</span></span><br><span class="line">            <span class="keyword">if</span> (oldQcm != <span class="keyword">null</span>) &#123;  <span class="comment">// 如果有旧的，则清除之前的信息</span></span><br><span class="line">                LOG.warn(<span class="string">"Clobbering already-set QuorumCnxManager (restarting leader election?)"</span>);</span><br><span class="line">                oldQcm.halt();</span><br><span class="line">            &#125;</span><br><span class="line">            QuorumCnxManager.Listener listener = qcm.listener;</span><br><span class="line">            <span class="keyword">if</span> (listener != <span class="keyword">null</span>) &#123;</span><br><span class="line">                listener.start();   <span class="comment">// 监听线程</span></span><br><span class="line">                FastLeaderElection fle = <span class="keyword">new</span> FastLeaderElection(<span class="keyword">this</span>, qcm); </span><br><span class="line">                fle.start();    <span class="comment">// 选举的主要组件,启动后，主线程也同步往下走</span></span><br><span class="line">                le = fle;   <span class="comment">// 设置选举算法为fle FastLeaderElection</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                LOG.error(<span class="string">"Null listener when initializing cnx manager"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">assert</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> le;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>创建群主选举的通信管理器，并开启选举通信,listener.start()</p>
+</li>
+<li><p>启动选举也就是FastLeaderElection.start()</p>
+</li>
+<li><p>也就是最开始的QuorumPeer.start();</p>
+</li>
+</ol>
+<p><img src="https://upload-images.jianshu.io/upload_images/23765437-add0982de1467d1b.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="选举流程简要.PNG"></p>
+<p>选举的通信管理我们单独作为了一个章节来讲，有兴趣的可以看<a href="">源码解析三、选举中的通信</a>.我们这里只讲FastLeaderElection启动过程、QuorumPeer.run方法</p>
+<h2 id="FastLeaderElection"><a href="#FastLeaderElection" class="headerlink" title="FastLeaderElection"></a>FastLeaderElection</h2><p>主要属性如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">QuorumCnxManager manager;<span class="comment">// 通信管理器</span></span><br><span class="line"><span class="keyword">private</span> SyncedLearnerTracker leadingVoteSet;    <span class="comment">// 投票</span></span><br><span class="line">LinkedBlockingQueue&lt;ToSend&gt; sendqueue;  <span class="comment">// 待发送的消息队列，也就是自己的选票</span></span><br><span class="line">LinkedBlockingQueue&lt;Notification&gt; recvqueue; <span class="comment">//收到的消息，也就是收到的投票信息</span></span><br><span class="line">QuorumPeer self; <span class="comment">// 自引用</span></span><br><span class="line">Messenger messenger; <span class="comment">// 消息管理器</span></span><br><span class="line">AtomicLong logicalclock = <span class="keyword">new</span> AtomicLong();</span><br><span class="line"><span class="keyword">long</span> proposedLeader;    <span class="comment">// 投票的sid</span></span><br><span class="line"><span class="keyword">long</span> proposedZxid;  <span class="comment">// 投票的zxid</span></span><br><span class="line"><span class="keyword">long</span> proposedEpoch;  <span class="comment">// 投票的epoch</span></span><br></pre></td></tr></table></figure>
+
+<p>starter 初始化，票据和自己的zxid都为-1 ，初始化发送和接收队列。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">starter</span><span class="params">(QuorumPeer self, QuorumCnxManager manager)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.self = self;</span><br><span class="line">    proposedLeader = -<span class="number">1</span>;</span><br><span class="line">    proposedZxid = -<span class="number">1</span>;</span><br><span class="line">    sendqueue = <span class="keyword">new</span> LinkedBlockingQueue&lt;ToSend&gt;();</span><br><span class="line">    recvqueue = <span class="keyword">new</span> LinkedBlockingQueue&lt;Notification&gt;();</span><br><span class="line">    <span class="keyword">this</span>.messenger = <span class="keyword">new</span> Messenger(manager);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">    * 启动messger线程，其实就是启动发送和接收线程，我们稍后详解。</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.messenger.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Messenger"><a href="#Messenger" class="headerlink" title="Messenger"></a>Messenger</h3><p>主要工作的类还是message，这是一个多线程实现的消息管理器</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="class"><span class="keyword">class</span> <span class="title">Messenger</span> </span>&#123;</span><br><span class="line">    WorkerSender ws;    <span class="comment">// 发送消息</span></span><br><span class="line">    WorkerReceiver wr;  <span class="comment">// 接受消息</span></span><br><span class="line">    Messenger(QuorumCnxManager manager) &#123;</span><br><span class="line">        <span class="keyword">this</span>.ws = <span class="keyword">new</span> WorkerSender(manager);</span><br><span class="line">        <span class="keyword">this</span>.wsThread = <span class="keyword">new</span> Thread(<span class="keyword">this</span>.ws, <span class="string">"WorkerSender[myid="</span> + self.getId() + <span class="string">"]"</span>);</span><br><span class="line">        <span class="keyword">this</span>.wsThread.setDaemon(<span class="keyword">true</span>);</span><br><span class="line">        <span class="keyword">this</span>.wr = <span class="keyword">new</span> WorkerReceiver(manager);</span><br><span class="line">        <span class="keyword">this</span>.wrThread = <span class="keyword">new</span> Thread(<span class="keyword">this</span>.wr, <span class="string">"WorkerReceiver[myid="</span> + self.getId() + <span class="string">"]"</span>);</span><br><span class="line">        <span class="keyword">this</span>.wrThread.setDaemon(<span class="keyword">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.wsThread.start();</span><br><span class="line">        <span class="keyword">this</span>.wrThread.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="WorkerReceiver"><a href="#WorkerReceiver" class="headerlink" title="WorkerReceiver"></a>WorkerReceiver</h3><p>WorkerReceiver主要功能都在run方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Message response;</span><br><span class="line">    <span class="keyword">while</span> (!stop) &#123;</span><br><span class="line">        <span class="comment">// Sleeps on receive</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 从消息通信管理器中的recvQueue队列拿数据，也就是其他节点发过来的消息。可以看选举通信那一章节。</span></span><br><span class="line">            response = manager.pollRecvQueue(<span class="number">3000</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">            <span class="keyword">if</span> (response == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Notification n = <span class="keyword">new</span> Notification();</span><br><span class="line">            <span class="keyword">int</span> rstate = response.buffer.getInt();</span><br><span class="line">            <span class="keyword">long</span> rleader = response.buffer.getLong(); <span class="comment">// 省略部分内容</span></span><br><span class="line">            <span class="keyword">int</span> version = <span class="number">0x0</span>;</span><br><span class="line">            QuorumVerifier rqv = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">if</span> (!validVoter(response.sid)) &#123;</span><br><span class="line">                sendqueue.offer(notmsg); <span class="comment">// 如果sid不合法返回一个消息</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                QuorumPeer.ServerState ackstate = QuorumPeer.ServerState.LOOKING;</span><br><span class="line">                <span class="keyword">switch</span> (rstate) &#123;<span class="comment">/*设置state，如LOOKING*/</span>&#125;</span><br><span class="line">                <span class="comment">// 组装n Notification 省略部分内容</span></span><br><span class="line">                n.leader = rleader;</span><br><span class="line">                <span class="comment">// 如果还在LOOKING的状态，则将这条选举信息方队消息队列recvqueue</span></span><br><span class="line">                <span class="keyword">if</span> (self.getPeerState() == QuorumPeer.ServerState.LOOKING) &#123;</span><br><span class="line">                    recvqueue.offer(n);</span><br><span class="line">                    <span class="comment">// 如果发现对端发来消息。epoch比当前节点小，则发送我们的投票过去。</span></span><br><span class="line">                    <span class="comment">// 尝试让它更新投票(此时与getCurrentVote是不同的，还没有这个值)</span></span><br><span class="line">                    <span class="keyword">if</span> ((ackstate == QuorumPeer.ServerState.LOOKING)&amp;&amp; (n.electionEpoch &lt; logicalclock.get())) &#123;</span><br><span class="line">                        Vote v = getVote();</span><br><span class="line">                        QuorumVerifier qv = self.getQuorumVerifier();</span><br><span class="line">                        ToSend notmsg = <span class="keyword">new</span> ToSend(getVote());</span><br><span class="line">                        sendqueue.offer(notmsg);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果本节点应不再是LOOKING状态，且对端状态是LOOKING，则发送我们的投票信息</span></span><br><span class="line">                    Vote current = self.getCurrentVote();</span><br><span class="line">                    <span class="keyword">if</span> (ackstate == QuorumPeer.ServerState.LOOKING) &#123;</span><br><span class="line">                        <span class="comment">// 如果自身是Leader角色，判断在设定的时间段内(即initLimit*tickTime)</span></span><br><span class="line">                        <span class="comment">//是否有半数以上的Follower与Leader建立连接，假如没有半数以上的Follower</span></span><br><span class="line">                        <span class="comment">//与Leader建立连接的话Leader便会退出领导，并重新开始集群Leader的选举</span></span><br><span class="line">                        <span class="keyword">if</span> (self.leader != <span class="keyword">null</span>) &#123;</span><br><span class="line">                            <span class="keyword">if</span> (leadingVoteSet != <span class="keyword">null</span>) &#123;</span><br><span class="line">                                self.leader.setLeadingVoteSet(leadingVoteSet);</span><br><span class="line">                                leadingVoteSet = <span class="keyword">null</span>;</span><br><span class="line">                            &#125;</span><br><span class="line">                            self.leader.reportLookingSid(response.sid);</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        QuorumVerifier qv = self.getQuorumVerifier();</span><br><span class="line">                        <span class="comment">// 将拿到的消息放到消息队列sendqueue</span></span><br><span class="line">                        ToSend notmsg = <span class="keyword">new</span> ToSend(current);</span><br><span class="line">                        sendqueue.offer(notmsg);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            LOG.warn(<span class="string">"Interrupted Exception while waiting for new message"</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    LOG.info(<span class="string">"WorkerReceiver is down"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>过程总结如下：</p>
+<ol>
+<li>从选举通信消息管理器中拿到消息</li>
+<li>组装成投票信息</li>
+<li>验证消息的sid是否合法，不合法则返回给对方一个消息,将其放入sendqueue</li>
+<li>判断自身的状态，如果是LOOKING，则将这条消息放到接受队列recvqueue</li>
+<li>如果对端也是LOOKING状态，且对方的Epoch比我们的旧，则发送我们的投票，尝试让其更新,将其放入sendqueue</li>
+<li>如果本节点应不是LOOKING状态，且对端状态是LOOKING，则发送我们的投票信息，将其放入sendqueue</li>
+</ol>
+<blockquote>
+<p>如果本身是LEADING状态，有可能会触发自身状态的改变，这个留到后面讲</p>
+</blockquote>
+<h3 id="WorkerSender"><a href="#WorkerSender" class="headerlink" title="WorkerSender"></a>WorkerSender</h3><p>相对于WorkerReceiver,WorkerSender更简单，就是将需要发送的消息从sendqueue放到manager里的queueSendMap准备发送。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 拿到消息然后发送</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (!stop) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ToSend m = sendqueue.poll(<span class="number">3000</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">            <span class="keyword">if</span> (m == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            process(m);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    LOG.info(<span class="string">"WorkerSender is down"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">process</span><span class="params">(ToSend m)</span> </span>&#123;</span><br><span class="line">    ByteBuffer requestBuffer = buildMsg(m.state.ordinal(), m.leader, m.zxid, m.electionEpoch, m.peerEpoch, m.configData);</span><br><span class="line">    <span class="comment">// 调用的是通信管理器的方法。其实就是放到queueSendMap 对应sid的队列中</span></span><br><span class="line">    manager.toSend(m.sid, requestBuffer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="主线程中的群主选举"><a href="#主线程中的群主选举" class="headerlink" title="主线程中的群主选举"></a>主线程中的群主选举</h2><p>主要集中在run方法中，由于run方法是在节点运行的所有过程，因此我们这里只列举与群主选举有关的部分：</p>
+<h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    updateThreadName();</span><br><span class="line">    LOG.debug(<span class="string">"Starting quorum peer"</span>);</span><br><span class="line">    <span class="comment">// 开启jmx</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 主循环</span></span><br><span class="line">        <span class="keyword">while</span> (running) &#123;</span><br><span class="line">            <span class="keyword">switch</span> (getPeerState()) &#123;</span><br><span class="line">            <span class="keyword">case</span> LOOKING:   <span class="comment">// 此时为群主选举状态</span></span><br><span class="line">                LOG.info(<span class="string">"LOOKING"</span>);</span><br><span class="line">                ServerMetrics.getMetrics().LOOKING_COUNT.add(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (Boolean.getBoolean(<span class="string">"readonlymode.enabled"</span>)) &#123;</span><br><span class="line">                    <span class="comment">// 只读模式下的server处理</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        reconfigFlagClear();</span><br><span class="line">                        <span class="comment">// 初始值是false，后面leader选举失败会变为true</span></span><br><span class="line">                        <span class="keyword">if</span> (shuttingDownLE) &#123;</span><br><span class="line">                            shuttingDownLE = <span class="keyword">false</span>;</span><br><span class="line">                            startLeaderElection();</span><br><span class="line">                        &#125;</span><br><span class="line">                        setCurrentVote(makeLEStrategy().lookForLeader()); <span class="comment">// 核心选举算法</span></span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        LOG.warn(<span class="string">"Unexpected exception"</span>, e);</span><br><span class="line">                        setPeerState(ServerState.LOOKING);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="comment">// 其他状态的处理</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>于是我们的目光转到setCurrentVote(makeLEStrategy().lookForLeader());<br>其中makeLEStrategy()是获取选举算法，我们在上一步createElectionAlgorithm已经设置了，也就是FastLeaderElection。<br>我们选举真正的核心是lookForLeader()方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 开启新一轮的选举，只要我们节点从其他状态转换成为LOOKING状态，就会触发该方法，并通知其他节点</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> Vote <span class="title">lookForLeader</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line"></span><br><span class="line">     self.start_fle = Time.currentElapsedTime();</span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="comment">// 存储当前选举的选票，也就是逻辑时钟为logicalclock（当前时钟）的选票，当前参与者使用recvset来推断是否有大多数参与者投票支持它。 </span></span><br><span class="line">         Map&lt;Long, Vote&gt; recvset = <span class="keyword">new</span> HashMap&lt;Long, Vote&gt;();</span><br><span class="line">         <span class="comment">//前一轮选票，以及当前群主选票（但是只保存FOLLOWING和LEADING的投票），参与者可以通过它来判断谁是leader</span></span><br><span class="line">         Map&lt;Long, Vote&gt; outofelection = <span class="keyword">new</span> HashMap&lt;Long, Vote&gt;();</span><br><span class="line">         <span class="keyword">int</span> notTimeout = minNotificationInterval;</span><br><span class="line">         <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">             logicalclock.incrementAndGet();</span><br><span class="line">             updateProposal(getInitId(), getInitLastLoggedZxid(), getPeerEpoch()); <span class="comment">//1. 初始化自己的选票</span></span><br><span class="line">         &#125;</span><br><span class="line">         sendNotifications(); <span class="comment">// 2. 广播自己的选票</span></span><br><span class="line">         SyncedLearnerTracker voteSet;</span><br><span class="line">         <span class="comment">// 主循环，直到找到leader</span></span><br><span class="line">         <span class="keyword">while</span> ((self.getPeerState() == ServerState.LOOKING) &amp;&amp; (!stop)) &#123;</span><br><span class="line">             <span class="comment">// 3.从recvqueue拿到下一个选票</span></span><br><span class="line">             Notification n = recvqueue.poll(notTimeout, TimeUnit.MILLISECONDS);</span><br><span class="line">             <span class="comment">// 4. 如果没有消息，那么就再广播一次，这是因为有可能其他节点没有收到消息。</span></span><br><span class="line">             <span class="keyword">if</span> (n == <span class="keyword">null</span>) &#123;</span><br><span class="line">                 <span class="keyword">if</span> (manager.haveDelivered()) &#123; <span class="comment">// 只要有为空的，说明发出去，但是没有成功，则再广播一遍。</span></span><br><span class="line">                     sendNotifications();</span><br><span class="line">                 &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                     manager.connectAll(); <span class="comment">// 都不为空，说明连接可能创建失败或还没创建好</span></span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;   <span class="comment">// 5. 验证选票的正确性，一是验证当前候选人和上一轮候选人是否包括该sid，</span></span><br><span class="line">                 <span class="comment">//二是验证当前候选人和上一轮候选人是否包括该选票的推举人。 </span></span><br><span class="line">             <span class="keyword">else</span> <span class="keyword">if</span> (validVoter(n.sid) &amp;&amp; validVoter(n.leader)) &#123;</span><br><span class="line">                 <span class="keyword">switch</span> (n.state) &#123;</span><br><span class="line">                 <span class="keyword">case</span> LOOKING:</span><br><span class="line">                     <span class="comment">// 6. 如果选票的逻辑始终大于当前节点的逻辑时钟，则说明当前节点慢多个轮次。</span></span><br><span class="line">                     <span class="comment">//则重置当前节点的时钟，并清除之前的选票，然后广播更新后的选票</span></span><br><span class="line">                     <span class="keyword">if</span> (n.electionEpoch &gt; logicalclock.get()) &#123;</span><br><span class="line">                         logicalclock.set(n.electionEpoch);</span><br><span class="line">                         recvset.clear();</span><br><span class="line">                         <span class="keyword">if</span> (totalOrderPredicate(n.leader, n.zxid, n.peerEpoch, getInitId(), getInitLastLoggedZxid(), getPeerEpoch())) &#123;</span><br><span class="line">                             updateProposal(n.leader, n.zxid, n.peerEpoch); <span class="comment">// 用初始化的各个值来pk选票。</span></span><br><span class="line">                         &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                             updateProposal(getInitId(), getInitLastLoggedZxid(), getPeerEpoch());</span><br><span class="line">                         &#125;</span><br><span class="line">                         sendNotifications();   <span class="comment">// 广播自己的选票</span></span><br><span class="line">                     &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n.electionEpoch &lt; logicalclock.get()) &#123;</span><br><span class="line">                         <span class="keyword">break</span>;</span><br><span class="line">                         <span class="comment">// 相等的时候也要pk</span></span><br><span class="line">                     &#125; <span class="keyword">else</span> <span class="keyword">if</span> (totalOrderPredicate(n.leader, n.zxid, n.peerEpoch, proposedLeader, proposedZxid, proposedEpoch)) &#123;</span><br><span class="line">                         updateProposal(n.leader, n.zxid, n.peerEpoch);</span><br><span class="line">                         sendNotifications();</span><br><span class="line">                     &#125;</span><br><span class="line">                     <span class="comment">// 7. 将选票放入recvset，注意每个服务器都只有一份，所以重发发没有副作用。</span></span><br><span class="line">                     recvset.put(n.sid, <span class="keyword">new</span> Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch)); </span><br><span class="line">                     <span class="comment">// 8. 统计选票（针对当前选票），也就是当前别选举的节点的投票。</span></span><br><span class="line">                     voteSet = getVoteTracker(recvset, <span class="keyword">new</span> Vote(proposedLeader, proposedZxid, logicalclock.get(), proposedEpoch));</span><br><span class="line">                     <span class="comment">// 如果该投票仲裁有效（也就是当前投票数超过一半）</span></span><br><span class="line">                     <span class="keyword">if</span> (voteSet.hasAllQuorums()) &#123; </span><br><span class="line">                         <span class="keyword">while</span> ((n = recvqueue.poll(finalizeWait, TimeUnit.MILLISECONDS)) != <span class="keyword">null</span>) &#123; <span class="comment">// 看是否有新的选票进来</span></span><br><span class="line">                             <span class="keyword">if</span> (totalOrderPredicate(n.leader, n.zxid, n.peerEpoch, proposedLeader, proposedZxid, </span><br><span class="line">                             <span class="comment">// 并且选票比当前节点的票据更高，则更新</span></span><br><span class="line">                             proposedEpoch)) &#123;</span><br><span class="line">                                 recvqueue.put(n);</span><br><span class="line">                                 <span class="keyword">break</span>;</span><br><span class="line">                             &#125;</span><br><span class="line">                         &#125;</span><br><span class="line">                         <span class="comment">// 如果没有更好的选票，则结束选票，选择当前所选举的Leader为Leader</span></span><br><span class="line">                         <span class="keyword">if</span> (n == <span class="keyword">null</span>) &#123;</span><br><span class="line">                             setPeerState(proposedLeader, voteSet);</span><br><span class="line">                             Vote endVote = <span class="keyword">new</span> Vote(proposedLeader, proposedZxid, logicalclock.get(), proposedEpoch);</span><br><span class="line">                             leaveInstance(endVote);</span><br><span class="line">                             <span class="keyword">return</span> endVote;</span><br><span class="line">                         &#125;</span><br><span class="line">                     &#125;</span><br><span class="line">                     <span class="keyword">break</span>;</span><br><span class="line">                 <span class="keyword">case</span> OBSERVING:</span><br><span class="line">                     LOG.debug(<span class="string">"Notification from observer: &#123;&#125;"</span>, n.sid);</span><br><span class="line">                     <span class="keyword">break</span>;</span><br><span class="line">                 <span class="keyword">case</span> FOLLOWING:</span><br><span class="line">                 <span class="keyword">case</span> LEADING:</span><br><span class="line">                     <span class="comment">// 如果轮次是一样的，则进行统计。</span></span><br><span class="line">                     <span class="keyword">if</span> (n.electionEpoch == logicalclock.get()) &#123;</span><br><span class="line">                         recvset.put(n.sid, <span class="keyword">new</span> Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch, n.state));</span><br><span class="line">                         voteSet = getVoteTracker(recvset, <span class="keyword">new</span> Vote(n.version, n.leader, n.zxid, n.electionEpoch, n.peerEpoch, n.state));</span><br><span class="line">                         <span class="keyword">if</span> (voteSet.hasAllQuorums() &amp;&amp; checkLeader(recvset, n.leader, n.electionEpoch)) &#123;</span><br><span class="line">                             setPeerState(n.leader, voteSet);</span><br><span class="line">                             Vote endVote = <span class="keyword">new</span> Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch);</span><br><span class="line">                             leaveInstance(endVote);</span><br><span class="line">                             <span class="keyword">return</span> endVote;</span><br><span class="line">                         &#125;</span><br><span class="line">                     &#125;</span><br><span class="line">                     <span class="comment">// 如果不是同一轮次。或者还没有结束，将此选票放入outofelection</span></span><br><span class="line">                     <span class="comment">// 这里有点难以理解，不过我们可以看不同的地方。</span></span><br><span class="line">                     <span class="comment">// outofelection没有加入过LOOKING状态的选票，也就是所有LEADER和FOLLOW的选票,判断条件是这些节点总数的一半，而不包括looking状态的节点。</span></span><br><span class="line">                     <span class="comment">// 上面的判断针对的是electionEpoch等于目前的轮次情况，而这里解决的问题是不相等的情况下，还能更新logicalclock</span></span><br><span class="line">                     <span class="comment">// 因为如果其他节点都是follower和leader状态，那么我们永远无法更新logicalclock</span></span><br><span class="line">                     outofelection.put(n.sid, <span class="keyword">new</span> Vote(n.version, n.leader, n.zxid, n.electionEpoch, n.peerEpoch, n.state));</span><br><span class="line">                     voteSet = getVoteTracker(outofelection, <span class="keyword">new</span> Vote(n.version, n.leader, n.zxid, n.electionEpoch, n.peerEpoch, n.state));</span><br><span class="line"></span><br><span class="line">                     <span class="keyword">if</span> (voteSet.hasAllQuorums() &amp;&amp; checkLeader(outofelection, n.leader, n.electionEpoch)) &#123;</span><br><span class="line">                         <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                             logicalclock.set(n.electionEpoch);</span><br><span class="line">                             setPeerState(n.leader, voteSet);</span><br><span class="line">                         &#125;</span><br><span class="line">                         Vote endVote = <span class="keyword">new</span> Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch);</span><br><span class="line">                         leaveInstance(endVote);</span><br><span class="line">                         <span class="keyword">return</span> endVote;</span><br><span class="line">                     &#125;</span><br><span class="line">                     <span class="keyword">break</span>;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">     &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="过程总结"><a href="#过程总结" class="headerlink" title="过程总结"></a>过程总结</h3><p>看完代码，我们再来总结一下流程</p>
+<ol>
+<li>初始化自己的选票</li>
+<li>广播自己的选票</li>
+<li>从recvqueue拿到下一个选票</li>
+<li>如果消息为空，那么就再广播一次，这是因为有可能其他节点没有收到消息。</li>
+<li>验证选票的正确性，一是验证当前候选人和上一轮候选人是否包括该sid，二是验证当前候选人和上一轮候选人是否包括该选票的推举人。</li>
+<li>对选票做处理：<ul>
+<li>LOOKING状态的选票<ul>
+<li>如果选票的逻辑始终大于当前节点的逻辑时钟，则说明当前节点慢多个轮次。则重置当前节点的时钟，并清除之前的选票，然后广播更新后的选票</li>
+<li>将选票放入recvset，注意每个服务器都只有一份，所以重复发没有副作用。</li>
+<li>统计选票（针对当前选票），也就是当前别选举的节点的投票。如果该投票仲裁有效（也就是当前投票数超过一半）看是否有新的选票进来，如果没有更好的选票，则结束选票，选择当前所选举的Leader</li>
+</ul>
+</li>
+<li>FELLOW或者LEADER的选票<ul>
+<li>如果轮次是一样的，进行统计所有的选票，如果成功，则返回。</li>
+<li>再对不在LOOKING状态的选票进行一次统计，并设置新的轮次。这个针对新节点加入已经稳定后的集群。</li>
+</ul>
+</li>
+<li>没有结束则继续获取选票。</li>
+</ul>
+</li>
+</ol>
+<p>[图片上传失败…(image-2d2cd3-1606390914706)]</p>
+<p>一些参数介绍：  </p>
+<ul>
+<li><p>logicalclock(当前节点)=electionEpoch(当前的投票)  // 选举的轮次，默认是0，每执行一次选举都会++  </p>
+</li>
+<li><p>proposedEpoch(当前的节点)=peerEpoch(当前的投票) // 每次leader选举完成之后，都会选举出一个新的<br>peerEpoch，作为该Leader轮次，用来标记事务请求所属的轮次。  </p>
+</li>
+<li><p>currentEpoch 如果不是Leader的时候，一直是初始化的Epoch，如果是leader，成为leader之后的最新的轮次  </p>
+</li>
+</ul>
+<h3 id="投票pk"><a href="#投票pk" class="headerlink" title="投票pk"></a>投票pk</h3><ol>
+<li>如果当前票据的Leader轮次大于当前节点的Leader轮次，则返回true；</li>
+<li>如果当前票据和当前节点自己的票据Leader轮次相等，则比较事物id zxid，如果当前票据更大，则返回true；</li>
+<li>如果当前票据和当前节点自己的票据Leader轮次和事物zxid都相等，则比较两者的sid 如果当前sid更大，返回true;</li>
+<li>其他情况返回false，也就是不用更新选票。</li>
+</ol>
+<h2 id="流程总结"><a href="#流程总结" class="headerlink" title="流程总结"></a>流程总结</h2><p>结合另一章节介绍的选举中的通信，我们可以梳理出，选举过程中所有组件的交互关系。一共三个组件QuorumCnxManager、FastLeaderElection、QuorumPeer。<br>都是作为一个或多个线程来并行处理，从而选出最后的主节点：</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/23765437-9fc1310ea594a6f4.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="选举过程中各组件关系"></p>
+<h2 id="脑裂问题"><a href="#脑裂问题" class="headerlink" title="脑裂问题"></a>脑裂问题</h2><p>之所以没有单独放到一个章节来讲，主要是因为zookeeper如今的版本已基本解决了脑裂的问题。</p>
+<h3 id="什么是脑裂"><a href="#什么是脑裂" class="headerlink" title="什么是脑裂"></a>什么是脑裂</h3><p>很多集群模式工作的组件比如zookeeper、elasticSearch，他们通常有一个master节点，负责调度或者说负责管理、通信，总之一定有一个中心节点（可以看作是集群的大脑）。在正常工作的情况下，一般没有问题，但如果出现通信异常、程序异常<br>的情况，就是出现两个master节点，这就是脑裂现象。</p>
+<h3 id="如何产生"><a href="#如何产生" class="headerlink" title="如何产生"></a>如何产生</h3><ol>
+<li>集群部分通信断开<br>假设我们有六个节点，一个网段有三台，某一刻，两个网段的连接断开： </li>
+</ol>
+<p><img src="https://upload-images.jianshu.io/upload_images/23765437-f6673b8ec306f5c6.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="脑裂现象一"></p>
+<p>在如上的情况下，网络断开后，另一个网段就会有可能自主的产生一个新的master节点，这样就发生了脑裂<br>2. master节点断开后又连上<br>假设我们有四个节点，在某个瞬间，master节点断开通信，或者延迟。那么这个时候其他节点会重新选举出一个新的master节点，等到master节点恢复正常，它会认为它依然是master节点，这个时候集群出现了两个，也就是脑裂。</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/23765437-67ea16ed0b717098.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="脑裂现象二"></p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>在当前版本中，zookeeper已经解决以上两个问题，如果依照上文看懂了zookeeper的源码，那应该就能给出答案。</p>
+<ul>
+<li>使用仲裁机制Quorum，也就是master节点产生，必须获得半数以上的节点<br>如上网段二是三台机器，那么就完全没有办法选举出master节点，注意这里是半数以上&gt;，而不是半数或者以上&gt;=。</li>
+<li>使用epch机制，每次选举都会累加<br>在上述情况二中，master断开，其他三个节点重新选举，选票为3超过了一半有效，且epoch+1，等之前的master重新恢复之后，它的epoch已经是旧的了，所以其他三个节点都不会认同，而是会触发其（旧master）更新，这样就防止了脑裂</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/08/15/zookeeper%E4%B8%93%E9%A2%98/%E5%85%AD%E3%80%81Zookeeper%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E4%B9%8B%E9%80%89%E4%B8%BE%E4%B8%AD%E7%9A%84%E9%80%9A%E4%BF%A1/" rel="next" title="六、Zookeeper源码解析之选举中的通信">
+                <i class="fa fa-chevron-left"></i> 六、Zookeeper源码解析之选举中的通信
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/10/16/elk%E4%B8%93%E9%A2%98/elasticsearch%E9%AB%98%E7%BA%A7%E9%85%8D%E7%BD%AE/" rel="prev" title="elasticsearch高级配置">
+                elasticsearch高级配置 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#选举主流程"><span class="nav-number">1.</span> <span class="nav-text">选举主流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FastLeaderElection"><span class="nav-number">2.</span> <span class="nav-text">FastLeaderElection</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Messenger"><span class="nav-number">2.1.</span> <span class="nav-text">Messenger</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WorkerReceiver"><span class="nav-number">2.2.</span> <span class="nav-text">WorkerReceiver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WorkerSender"><span class="nav-number">2.3.</span> <span class="nav-text">WorkerSender</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主线程中的群主选举"><span class="nav-number">3.</span> <span class="nav-text">主线程中的群主选举</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#代码分析"><span class="nav-number">3.1.</span> <span class="nav-text">代码分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#过程总结"><span class="nav-number">3.2.</span> <span class="nav-text">过程总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#投票pk"><span class="nav-number">3.3.</span> <span class="nav-text">投票pk</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流程总结"><span class="nav-number">4.</span> <span class="nav-text">流程总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#脑裂问题"><span class="nav-number">5.</span> <span class="nav-text">脑裂问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是脑裂"><span class="nav-number">5.1.</span> <span class="nav-text">什么是脑裂</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何产生"><span class="nav-number">5.2.</span> <span class="nav-text">如何产生</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决方案"><span class="nav-number">5.3.</span> <span class="nav-text">解决方案</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

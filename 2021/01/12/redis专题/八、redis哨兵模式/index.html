@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="sentinel," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="哨兵模式是一种常见的高可用架构">
+<meta property="og:type" content="article">
+<meta property="og:title" content="八、redis哨兵模式">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2021/01/12/redis%E4%B8%93%E9%A2%98/%E5%85%AB%E3%80%81redis%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="哨兵模式是一种常见的高可用架构">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-6048ff24c4b4b273.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="article:published_time" content="2021-01-12T13:22:54.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:39:36.792Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="sentinel">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/23765437-6048ff24c4b4b273.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2021/01/12/redis专题/八、redis哨兵模式/"/>
+
+
+
+
+
+  <title>八、redis哨兵模式 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2021/01/12/redis%E4%B8%93%E9%A2%98/%E5%85%AB%E3%80%81redis%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">八、redis哨兵模式</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-01-12T21:22:54+08:00">
+                2021-01-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/redis%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">redis专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  哨兵模式是一种常见的高可用架构
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><p>使用主从复制能够将主节点的数据同步到从节点，一定程度上保证了数据的完整性，也提供了扩展读的能力。<br>但是主从复制有以下问题：</p>
+<ul>
+<li>一旦主节点宕机，需要手动提升从节点为主节点</li>
+<li>主节点的写能力受到单机的限制</li>
+<li>主节点的存储能力也受到单机的限制</li>
+</ul>
+<h3 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h3><p>Redis主从模式下一定程度上解决了高可用问题，但是全程需要人去干预，非常不方便，考虑到这点，有些公司把一些<br>流程自动化，但是会存在一些问题，比如判断节点不可用的机制是否完善、如何从多个从节点中选出一个晋升为主节点等等，<br>Redis Sentinel方案正式用于解决这些问题。</p>
+<p>当主节点出现故障时，Redis Sentinel能够自动完成故障发现和故障转移，并通知应用方，实现真正的高可用。</p>
+<p>Redis Sentinel是一个分布式架构，其中包含多个Sentinel节点和数据节点，每个Sentinel节点都会实时监控数据节点和<br>其他sentinel节点，并维护它们，整个过程都是自动完成的。<br><img src="https://upload-images.jianshu.io/upload_images/23765437-6048ff24c4b4b273.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="哨兵模式与主从模式的区别"></p>
+<p>整个过程如下：</p>
+<ol>
+<li>Sentinel发现主节点出现故障</li>
+<li>多个Sentinel节点对主节点的故障达成一致，选举出某个sentinel节点作为leader负责故障转移</li>
+<li>leader完成故障转移<ul>
+<li>1）提升从节点</li>
+<li>2）设置之前的从节点设置新的主节点</li>
+<li>3）通知客户端</li>
+<li>4）等之前的主节点恢复后，设置为从节点</li>
+</ul>
+</li>
+</ol>
+<h2 id="安装和部署"><a href="#安装和部署" class="headerlink" title="安装和部署"></a>安装和部署</h2><ol>
+<li><p>部署主从节点<br> <code>redis-server redis-6379.conf</code>  主节点</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">redis-server redis-6378.conf  <span class="comment"># 从节点1</span></span><br><span class="line">slaveof 127.0.0.1 6379</span><br><span class="line">redis-server redis-6380.conf  <span class="comment">#从节点2</span></span><br><span class="line">slaveof 127.0.0.1 6379</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>部署Sentinel节点</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sentinel-26379.conf</span><br><span class="line">port 26379 </span><br><span class="line">sentinel monitor mymaster 127.0.0.1 6379 2</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动Sentinel节点<br>两种方式：</p>
+<ul>
+<li>一种是使用redis-server：<code>redis-server sentinel-26379.conf --sentinel</code>  </li>
+<li>另一种是使用redis-sentinel：<code>redis-sentinel sentinel-26379.conf</code></li>
+</ul>
+</li>
+<li><p>检查  </p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:26379&gt; info sentinel</span><br><span class="line"><span class="comment"># Sentinel</span></span><br><span class="line">sentinel_masters:1</span><br><span class="line">sentinel_tilt:0</span><br><span class="line">sentinel_running_scripts:0</span><br><span class="line">sentinel_scripts_queue_length:0</span><br><span class="line">sentinel_simulate_failure_flags:0</span><br><span class="line">master0:name=mymaster,status=ok,address=100.101.71.99:6379,slaves=2,sentinels=3</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重要配置选项  </p>
+<ul>
+<li>sentinel monitor {master-name} {ip} {port} {quorum}<br>sentinel节点会定期监控主节点，quorum代表判定主节点不可用需要的票数，这里只配置了一个ip，是因为，sentinel节点会自动从主节点中获取其他从节点信息。</li>
+<li>sentinel down-after-milliseconds<br>每个sentinel节点要定期ping命令来判断数据节点和哨兵节点是否可达，超过了这个值，就表示不可达。</li>
+<li>sentinelparallel-syns<br>这个值表示在故障转移确定了新的主节点后，每次向新的主节点发起复制操作的从节点个数，如果过大，则可能在故障转移时发生阻塞</li>
+<li>sentinel failover-timeout<br>故障转移的超时时间</li>
+<li>sentinel notification-script<br>在故障转移期间，当一些警告级别的sentinel事件发生的时候会触发脚本</li>
+</ul>
+</li>
+</ol>
+<h2 id="哨兵模式下特殊API"><a href="#哨兵模式下特殊API" class="headerlink" title="哨兵模式下特殊API"></a>哨兵模式下特殊API</h2><ol>
+<li>sentinel master 展示主节点状态及其统计信息</li>
+<li>sentinel slaves {master name} 展示从节点信息</li>
+<li>sentinel reset {pattern} 对符合pattern的主节点的配置进行重置</li>
+<li>sentinel failover{mastername} 对指定主节点进行强制故障转移</li>
+<li>sentinel flushconfig，将哨兵节点的配置刷新到磁盘上，对于磁盘配置文件损坏的情况很有用</li>
+<li>sentinel remove {master-name} 取消该哨兵对于master节点的监控</li>
+<li>sentinel monitor {master-name} {ip}相反的命令</li>
+<li>sentinel set 动态设置相关配置</li>
+</ol>
+<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h2><h3 id="三个定时任务"><a href="#三个定时任务" class="headerlink" title="三个定时任务"></a>三个定时任务</h3><p>Redis Sentinel 通过三个定时监控任务完成对各个节点的发现与监控</p>
+<ol>
+<li><p>每隔10秒，每个Sentinel 节点会向主节点和从节点发送info命令获取最新的拓扑结构</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$&gt; info replication</span><br><span class="line">role:master</span><br><span class="line">connected_slaves:2 </span><br><span class="line">slave1:ip=127.0.0.1,port=6380,state=online,mymaster,offset=0,lag=0</span><br><span class="line">slave2:ip=127.0.0.1,port=6381,state=online,mymaster,offset=0,lag=0</span><br></pre></td></tr></table></figure>
+
+<p> 该定时任务的作用：</p>
+<ul>
+<li>通过主节点执行info，获取从节点的信息，所以无需显式配置监控从节点</li>
+<li>当有新的从节点加入，能够及时感知到</li>
+<li>节点不可达或者故障转移后，能及时更新拓扑结构</li>
+</ul>
+</li>
+<li><p>每隔2秒，都会向Redis数据节点的<em>sentinel</em>:hello频道上发送该Sentinel节点对于主节点的判断以及当前sentinel节点的信息<br>同时sentinel节点也会订阅该频道,互相交换主节点状态，以及版本信息</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$:SUBSCRIBE __sentinel__:hello</span><br><span class="line">1) <span class="string">"message"</span></span><br><span class="line">2) <span class="string">"__sentinel__:hello"</span></span><br><span class="line">3) <span class="string">"100.101.71.99,26380,13da260e2869a5758a089a2e6fdf50a2e2c23d6e,1,mymaster,100.101.71.99,6380,1</span></span><br></pre></td></tr></table></figure>
+
+<p> 该定时任务的作用：</p>
+<ol>
+<li>发现新的sentinel节点</li>
+<li>更新配置，如果发现自己的版本低于其他节点的版本，则会更新，有点类似zookeeper的主节点选举，都用到了epoch</li>
+</ol>
+</li>
+<li><p>每隔1秒每个Sentinel节点会向主节点、从节点、其余Sentinel节点发送一条ping命令做一次心跳检测<br>该定时任务的作用是判断节点是否健康的重要依据，也就是ping之后，如果失败则主观下线</p>
+</li>
+</ol>
+<h3 id="主观下线和客观下线"><a href="#主观下线和客观下线" class="headerlink" title="主观下线和客观下线"></a>主观下线和客观下线</h3><ol>
+<li>主观下线<br>每隔1秒ping命令做心跳检测时，如果没有在down-after-milliseconds时间内有效回复，则会判定该节点失败。</li>
+<li>客观下线<br>当Sentinel节点主观下线的节点是master节点时，该Sentinel节点会通过Sentinel is-master-down-by-addr命令向其他Sentinel节点询问对主节点的判断，<br>当超过quorum个达成一致时，则会主观下线master节点</li>
+</ol>
+<h3 id="Sentinel领导者选举"><a href="#Sentinel领导者选举" class="headerlink" title="Sentinel领导者选举"></a>Sentinel领导者选举</h3><p>当Sentinel节点对于master节点做了客观下线后，需要确定哨兵节点的leader，因为故障转移只需要一个Sentinel节点来完成。</p>
+<p>选举的过程相对比较简单：</p>
+<ul>
+<li><p>每个Sentinel节点只有一票</p>
+</li>
+<li><p>每个在线的Sentinel节点都有可能成为leader，当它确认master主观下线时，会想起他Sentinel节点发送成为leader的请求</p>
+</li>
+<li><p>收到命令的Sentinel节点，如果没有投过票，则会同意该请求，也就是投票</p>
+</li>
+<li><p>如果该Sentinel节点发现自己的票数大于等于max(quorum,num(sentinels)/2+1),则会成为leader</p>
+<p>基于此原则，可以判断谁最先向各个节点发出请求，则最有可能会成为leader</p>
+</li>
+</ul>
+<h3 id="故障转移"><a href="#故障转移" class="headerlink" title="故障转移"></a>故障转移</h3><ol>
+<li>从follower节点中选出一个可用节点(存活、优先级最高、复制偏移量最大、runid最小(优先级依次降低)的从节点)</li>
+<li>对从节点执行slaveof no one</li>
+<li>Sentinel节点向其他从节点发送命令，让它们复制新的主节点</li>
+<li>Sentinel节点集合将原来的master节点更新为从节点</li>
+</ol>
+<h2 id="运维提示"><a href="#运维提示" class="headerlink" title="运维提示"></a>运维提示</h2><ol>
+<li>主要分析日志，整个过程都有日志打印</li>
+<li>需要对主节点下线时，比较合理的做法是使用sentinel failover命令，主动进行故障转移。</li>
+<li>如果想指定某个slave节点成为master节点，则可以设置其他节点的优先级slave-priority为0，再执行sentinel failover命令，最后将优先级调回来。<code>config get slave-priority</code></li>
+</ol>
+<h3 id="网络隔离的一致性"><a href="#网络隔离的一致性" class="headerlink" title="网络隔离的一致性"></a>网络隔离的一致性</h3><p>如果某个节点上sentinel和redis实例在同一个网络，其他的在另一个网络，当发送网络中断时会发生意外：  </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">            +-------------+</span><br><span class="line">            | Sentinel 1  | &lt;--- Client A</span><br><span class="line">            | Redis 1 (M) |</span><br><span class="line">            +-------------+</span><br><span class="line">                    |</span><br><span class="line">                    |</span><br><span class="line">+-------------+     |                     +------------+</span><br><span class="line">| Sentinel 2  |-----+-- / partition / ----| Sentinel 3 | &lt;--- Client B</span><br><span class="line">| Redis 2 (S) |                           | Redis 3 (M)|</span><br><span class="line">+-------------+                           +------------+</span><br></pre></td></tr></table></figure>
+
+<p>Redis3一开始是master，网络断开后，Redis1成为了新的主节点，Sentinel1和Sentinel2更新了配置，但这是Sentinel3还是原来的配置，这个时候我们出现了常说的脑裂现象(分布式常见的问题)，ClientB仍然向Redis3写数据。<br>当网络恢复后，Sentinel3恢复更新配置，这时Redis3成为了slave，之前ClientB写入的数据将会丢失。<br>如果把redis当成缓存，也许可以容忍，但如果是一个存储系统，则无法容忍。</p>
+<blockquote>
+<p>如果看过zookeeper的源码分析就知道，zookeeper有机制防止脑裂现象，它是通过持续交换信息，大于一般才正常工作，但这里的redis不是，为什么redis像zookeeper那样，保证<br>节点只有在超过半数以上才可用呢？我个人感觉根据cpa和base理论，Redis为了保证可用性，使用的是最终一致性，牺牲了高度一致性，尤其是其异步机制，也就是PA+最终一致性。另外在网络发生分区时A和P基本不可实现。也就是说当网络分区发生时只有PA和PC，由于被断开网络的那小部分不可用(如下文所说的配置)又在一定程度上变成了PC。  </p>
+</blockquote>
+<blockquote>
+<p>另外在分布式系统中，只要是不是在一个节点上部署，那么分区的情况将不可避免，所以如果满足CA，当数据分区时则最终会退化为只有A或者C，所以系统一般做成PA或者PC，而不是CA。</p>
+</blockquote>
+<p><strong>解决方法</strong>：<br>保证主节点至少有一个slave节点，但因为复制过程是异步的，所以需要两个配置：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">min-replicas-to-write 1</span><br><span class="line">min-replicas-max-lag 10</span><br></pre></td></tr></table></figure>
+
+<p>min-replicas-to-write保证了至少一个slave节点<br>min-replicas-max-lag，保证了slave节点复制同步最多10秒的延迟，如果10秒内没有同步成功，则代表slave失败。</p>
+<blockquote>
+<p>但还是有10秒的数据丢失</p>
+</blockquote>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/sentinel/" rel="tag"># sentinel</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/12/02/redis%E4%B8%93%E9%A2%98/%E5%85%AD%E3%80%81redis%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="next" title="六、redis内存模型">
+                <i class="fa fa-chevron-left"></i> 六、redis内存模型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2021/01/14/redis%E4%B8%93%E9%A2%98/%E4%B9%9D%E3%80%81redis%E9%9B%86%E7%BE%A4/" rel="prev" title="九、redis集群">
+                九、redis集群 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#基本概念"><span class="nav-number">1.</span> <span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#高可用"><span class="nav-number">1.1.</span> <span class="nav-text">高可用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装和部署"><span class="nav-number">2.</span> <span class="nav-text">安装和部署</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#哨兵模式下特殊API"><span class="nav-number">3.</span> <span class="nav-text">哨兵模式下特殊API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实现原理"><span class="nav-number">4.</span> <span class="nav-text">实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#三个定时任务"><span class="nav-number">4.1.</span> <span class="nav-text">三个定时任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#主观下线和客观下线"><span class="nav-number">4.2.</span> <span class="nav-text">主观下线和客观下线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Sentinel领导者选举"><span class="nav-number">4.3.</span> <span class="nav-text">Sentinel领导者选举</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#故障转移"><span class="nav-number">4.4.</span> <span class="nav-text">故障转移</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#运维提示"><span class="nav-number">5.</span> <span class="nav-text">运维提示</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#网络隔离的一致性"><span class="nav-number">5.1.</span> <span class="nav-text">网络隔离的一致性</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

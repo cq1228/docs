@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="redis cluster," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="集群模式是redis的分布式解决方案">
+<meta property="og:type" content="article">
+<meta property="og:title" content="九、redis集群">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2021/01/14/redis%E4%B8%93%E9%A2%98/%E4%B9%9D%E3%80%81redis%E9%9B%86%E7%BE%A4/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="集群模式是redis的分布式解决方案">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-b756463e236f1113.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-5d0d67d0cf875c32.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-dabe08a42f58e424.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-d500d782b54b8bad.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="article:published_time" content="2021-01-14T12:12:14.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:39:43.294Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="redis cluster">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/23765437-b756463e236f1113.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2021/01/14/redis专题/九、redis集群/"/>
+
+
+
+
+
+  <title>九、redis集群 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2021/01/14/redis%E4%B8%93%E9%A2%98/%E4%B9%9D%E3%80%81redis%E9%9B%86%E7%BE%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">九、redis集群</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-01-14T20:12:14+08:00">
+                2021-01-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/redis%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">redis专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  集群模式是redis的分布式解决方案
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="redis集群数据分区"><a href="#redis集群数据分区" class="headerlink" title="redis集群数据分区"></a>redis集群数据分区</h2><p>一个集群必须要解决数据分布的问题，常用的方法有哈希分区、顺序分区。哈希分区的特点是离散度好数据，而顺序分区则可以提供顺序访问。</p>
+<p>redis采用虚拟槽分区的方式来将数据分区,一共16384个槽，所有的键根据哈希函数slog=CRC16(key)&amp;16383，映射到0~16383整数槽内。<br>每一个节点负责维护一部分槽，以及槽所对应的键值数据  </p>
+<p>Redis虚拟槽分区的特点：</p>
+<ul>
+<li>解耦数据与节点之间的关系</li>
+<li>节点自身维护槽的映射关系，不需要客户端或者代理服务维护槽分区元数据</li>
+<li>支持节点、槽、键之间的映射查询，用于数据路由、在线伸缩等场景 </li>
+</ul>
+<p>redis集群功能缺陷：</p>
+<ol>
+<li>key批量操作支持有限，只能支持具有相同slot值的key执行批量操作</li>
+<li>同理事物也同样只支持同一节点上的事物操作</li>
+<li>key作为数据分区的最小粒度，因此不能将一个大的键值对象如hash、list等拆分到不同的节点分布</li>
+<li>不支持多数据库，只有一个db0</li>
+<li>复制结构只支持一层、从节点只能复制主节点，不支持树状分布</li>
+</ol>
+<h2 id="集群搭建"><a href="#集群搭建" class="headerlink" title="集群搭建"></a>集群搭建</h2><ol>
+<li><p>准备好6个节点：</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">redis-6379.conf</span><br><span class="line">redis-6380.conf</span><br><span class="line">redis-6381.conf</span><br><span class="line">redis-6382.conf</span><br><span class="line">redis-6383.conf</span><br><span class="line">redis-6384.conf</span><br><span class="line">$&gt; cat redis-6379.conf</span><br><span class="line">port 6379</span><br><span class="line">cluster-enabled yes</span><br><span class="line">cluster-node-timeout 15000</span><br><span class="line"><span class="comment"># 如果没有配置，则会在启动后生成一份</span></span><br><span class="line">cluster-config-file <span class="string">"nodes-6379.conf"</span></span><br><span class="line">logfile <span class="string">"/redis/logs/redis-6379.log"</span></span><br><span class="line">dbfilename <span class="string">"dump-6379.rdb"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动集群<br><code>redis-server conf/redis-6379.conf</code><br>目前每个节点都只能识别自己的节点新，因为现在彼此不知道对方的存在</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; CLUSTER NODES</span><br><span class="line">6e39c9aba1bb22c51e1fb6d37aeda4174a782eac :6379@16379 myself,master - 0 0 0 connected</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h3 id="手动建立集群"><a href="#手动建立集群" class="headerlink" title="手动建立集群"></a>手动建立集群</h3><ol>
+<li>节点握手<br>节点握手是让当前节点感知到另一个节点，由客户端发起命令,cluster meet {ip} {port}<br><img src="https://upload-images.jianshu.io/upload_images/23765437-b756463e236f1113.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="节点握手"></li>
+</ol>
+<p>节点握手后集群还不能正常工作，因为还没有分配槽，这个时候写命令会发现失败：</p>
+<pre><code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; <span class="built_in">set</span> hello redis</span><br><span class="line">(error) CLUSTERDOWN Hash slot not served</span><br><span class="line"><span class="comment"># 查看集群信息，发现state是fail状态，分配的槽slot为0</span></span><br><span class="line">127.0.0.1:6379&gt; cluster info</span><br><span class="line">cluster_state:fail</span><br><span class="line">cluster_slots_assigned:0</span><br><span class="line">cluster_slots_ok:0</span><br><span class="line">cluster_slots_pfail:0</span><br><span class="line">cluster_slots_fail:0</span><br><span class="line">cluster_known_nodes:6</span><br><span class="line">cluster_size:0</span><br><span class="line">cluster_current_epoch:5</span><br><span class="line">cluster_my_epoch:2</span><br><span class="line">cluster_stats_messages_ping_sent:490</span><br><span class="line">cluster_stats_messages_pong_sent:210</span><br><span class="line">cluster_stats_messages_meet_sent:7</span><br><span class="line">cluster_stats_messages_sent:707</span><br><span class="line">cluster_stats_messages_ping_received:210</span><br><span class="line">cluster_stats_messages_pong_received:198</span><br><span class="line">cluster_stats_messages_received:408</span><br></pre></td></tr></table></figure></code></pre><ol start="2">
+<li><p>分配槽<br>之前说过，redis集群把所有的数据映射到16384个槽中，而这些槽如何分配，是要通过配置来决定。只有这些槽都被分配好了<br>redis集群才能响应命令，通过<code>cluster addslots</code>命令为节点分槽。(正常做法应该使用create命令)</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./redis-cli 9 -p 6381 cluster addslots &#123;0..5461&#125;</span><br><span class="line">./redis-cli 9 -p 6381 cluster addslots &#123;5462..10922&#125;</span><br><span class="line">./redis-cli 9 -p 6381 cluster addslots &#123;10923..16383&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>此时集群已经可用了，为了集群的高可用，我们再为每一个节点分配一个从节点。<br>3. 配置集群从节点 cluster replicate {id}<br><code>CLUSTER REPLICATE 6e39c9aba1bb22c51e1fb6d37aeda4174a782eac</code>注意后面跟的是clusterid<br>以上步骤依照Redis协议手动建立了一个集群，便于理解集群建立的过程，但比较繁琐且容易出错，因此，官方自带工具方便我们快速搭建集群，之前我们使用<br>redis-trib.rb来创建，在Redis5.0中创建集群已经使用“redis-cli”来实现，所以redis-trib.rb的方式已经被抛弃</p>
+<h3 id="利用cluster-create快速搭建集群"><a href="#利用cluster-create快速搭建集群" class="headerlink" title="利用cluster create快速搭建集群"></a>利用cluster create快速搭建集群</h3><p>和上面的步骤一样先配置六个不同的配置文件，再启动6个进程，不过节点握手和分配槽这个步骤不一样，我们是有redis-cli来简化操作  </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">redis-cli --cluster subcommand [args] [opt]</span><br><span class="line">./redis-cli --cluster create --cluster-replicas 1 127.0.0.1:6380 127.0.0.1:6379 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384</span><br></pre></td></tr></table></figure>
+
+<p>最后输出结果</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">Master[0] -&gt; Slots 0 - 5460</span><br><span class="line">Master[1] -&gt; Slots 5461 - 10922</span><br><span class="line">Master[2] -&gt; Slots 10923 - 16383</span><br><span class="line">Adding replica 127.0.0.1:6383 to 127.0.0.1:6380</span><br><span class="line">Adding replica 127.0.0.1:6384 to 127.0.0.1:6379</span><br><span class="line">Adding replica 127.0.0.1:6382 to 127.0.0.1:6381</span><br><span class="line"><span class="comment"># 优化</span></span><br><span class="line">&gt;&gt;&gt; Trying to optimize slaves allocation <span class="keyword">for</span> anti-affinity</span><br><span class="line">[WARNING] Some slaves are <span class="keyword">in</span> the same host as their master</span><br><span class="line">M: 6e2da8e45d804b47fe599d121682e6a394c527ef 127.0.0.1:6380</span><br><span class="line">   slots:[0-5460] (5461 slots) master</span><br><span class="line">M: 4aa937577181f82ce88b1c909a519ca03963ab21 127.0.0.1:6379</span><br><span class="line">   slots:[5461-10922] (5462 slots) master</span><br><span class="line">M: 07b085e9e9750e5d0c319f3c099d70acda84f6fb 127.0.0.1:6381</span><br><span class="line">   slots:[10923-16383] (5461 slots) master</span><br><span class="line">S: 0c1c1ce2bf3c890396da31a1b536adcd32e2766a 127.0.0.1:6382</span><br><span class="line">   replicates 07b085e9e9750e5d0c319f3c099d70acda84f6fb</span><br><span class="line">S: 36b71d82eaccae49f0aff395fa3cae03c1adcc0f 127.0.0.1:6383</span><br><span class="line">   replicates 6e2da8e45d804b47fe599d121682e6a394c527ef</span><br><span class="line">S: 4885dcbd061e28d969eb8d2ae893f256c9c79401 127.0.0.1:6384</span><br><span class="line">   replicates 4aa937577181f82ce88b1c909a519ca03963ab21</span><br><span class="line"><span class="comment"># 确认部署</span></span><br><span class="line">Can I <span class="built_in">set</span> the above configuration? (<span class="built_in">type</span> <span class="string">'yes'</span> to accept): yes</span><br><span class="line">&gt;&gt;&gt; Nodes configuration updated</span><br><span class="line">&gt;&gt;&gt; Assign a different config epoch to each node</span><br><span class="line">&gt;&gt;&gt; Sending CLUSTER MEET messages to join the cluster</span><br><span class="line">Waiting <span class="keyword">for</span> the cluster to join</span><br><span class="line"><span class="comment"># 其他校验信息</span></span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered</span><br></pre></td></tr></table></figure>
+
+<p>可以看到：</p>
+<ol>
+<li>redis-cli命令会对节点分配进行优化，比如主从使用不同的ip等</li>
+<li>部署方案需要人工再确认一遍</li>
+<li>会确保所有槽都被分配成功</li>
+</ol>
+<h2 id="集群内通信"><a href="#集群内通信" class="headerlink" title="集群内通信"></a>集群内通信</h2><p>redis集群采用p2p的Gossip协议，类似留言，通过彼此不断地通信交换信息，最后所有节点直到集群完整的信息。<br><img src="https://upload-images.jianshu.io/upload_images/23765437-5d0d67d0cf875c32.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="集群通信"></p>
+<ol>
+<li>集群中每个节点都会单独开辟一个TCP通道，用于节点之间彼此通信，通信端口号是在基础上加上10000.</li>
+<li>每个节点在固定周期内通过特定规则选择几个节点发送ping消息</li>
+<li>接收到ping消息的节点用pong消息作为响应</li>
+</ol>
+<blockquote>
+<p>特定规则是什么？</p>
+</blockquote>
+<p>由于内部需要频繁的进行节点信息交换，ping/pong消息会携带当前节点和部分其他节点的状态数据，Redis集群内<br>节点每秒执行10次，因此节点每次选择通信的节点列表非常重要。太多会影响带宽，太少又不能做到及时交换信息。因此redis采用过程如下：<br>[图片上传失败…(image-eae61e-1611843829725)]  </p>
+<blockquote>
+<p>消息的数据量</p>
+</blockquote>
+<ul>
+<li>消息头：固定占用myslots[CLUSTER_SLOTS/8],2kb</li>
+<li>消息体：默认是1/10个其他节点的信息，最少3个，醉倒total-2个，所以消息的大小跟节点数有关。</li>
+</ul>
+<h2 id="集群伸缩"><a href="#集群伸缩" class="headerlink" title="集群伸缩"></a>集群伸缩</h2><p>集群伸缩就是利用槽在节点间的移动，也就是数据在各个节点的移动。</p>
+<h3 id="扩容"><a href="#扩容" class="headerlink" title="扩容"></a>扩容</h3><ol>
+<li><p>准备节点  </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; cp redis-6384.conf redis-6385.conf</span><br><span class="line">&gt; sed -i <span class="string">'s/6384/6385/'</span> redis-6385.conf</span><br><span class="line">&gt; ./redis/src/redis-server config/redis-6385.conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>加入集群</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&gt; ./redis/src/redis-cli --cluster add-node localhost:6385 localhost:6384</span><br><span class="line">&gt;&gt;&gt; Adding node 127.0.0.1:6385 to cluster 127.0.0.1:6384</span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 127.0.0.1:6384)</span><br><span class="line">S: 4885dcbd061e28d969eb8d2ae893f256c9c79401 127.0.0.1:6384</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 4aa937577181f82ce88b1c909a519ca03963ab21</span><br><span class="line">M: ce5e60a517c8714d52b82d9e24b71d2f5a1868c4 127.0.0.1:6385</span><br><span class="line">   slots: (0 slots) master</span><br><span class="line">S: 0c1c1ce2bf3c890396da31a1b536adcd32e2766a 127.0.0.1:6382</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 07b085e9e9750e5d0c319f3c099d70acda84f6fb</span><br><span class="line">M: 07b085e9e9750e5d0c319f3c099d70acda84f6fb 127.0.0.1:6381</span><br><span class="line">   slots:[10923-16383] (5461 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: 36b71d82eaccae49f0aff395fa3cae03c1adcc0f 127.0.0.1:6383</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 6e2da8e45d804b47fe599d121682e6a394c527ef</span><br><span class="line">M: 6e2da8e45d804b47fe599d121682e6a394c527ef 127.0.0.1:6380</span><br><span class="line">   slots:[0-5460] (5461 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">M: 4aa937577181f82ce88b1c909a519ca03963ab21 127.0.0.1:6379</span><br><span class="line">   slots:[5461-10922] (5462 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line"><span class="comment"># meet 节点</span></span><br><span class="line">&gt;&gt;&gt; Send CLUSTER MEET to node 127.0.0.1:6385 to make it join the cluster.</span><br><span class="line">[OK] New node added correctly</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查node情况,发现已经加入</span></span><br><span class="line">&gt; cluster nodes</span><br><span class="line">4aa937577181f82ce88b1c909a519ca03963ab21 127.0.0.1:6379@16379 myself,master - 0 1611108761000 2 connected 5461-10922</span><br><span class="line">36b71d82eaccae49f0aff395fa3cae03c1adcc0f 127.0.0.1:6383@16383 slave 6e2da8e45d804b47fe599d121682e6a394c527ef 0 1611108764049 5 connected</span><br><span class="line">07b085e9e9750e5d0c319f3c099d70acda84f6fb 127.0.0.1:6381@16381 master - 0 1611108763000 3 connected 10923-16383</span><br><span class="line">ce5e60a517c8714d52b82d9e24b71d2f5a1868c4 127.0.0.1:6385@16385 master - 0 1611108763046 0 connected</span><br><span class="line">0c1c1ce2bf3c890396da31a1b536adcd32e2766a 127.0.0.1:6382@16382 slave 07b085e9e9750e5d0c319f3c099d70acda84f6fb 0 1611108762000 4 connected</span><br><span class="line">6e2da8e45d804b47fe599d121682e6a394c527ef 127.0.0.1:6380@16380 master - 0 1611108765050 1 connected 0-5460</span><br><span class="line">4885dcbd061e28d969eb8d2ae893f256c9c79401 127.0.0.1:6384@16384 slave 4aa937577181f82ce88b1c909a519ca03963ab21 0 1611108763000 6 connected</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>迁移槽<br>继续使用redis-cli cluster 命令，使用reshard参数迁移槽</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&gt; ./redis/src/redis-cli --cluster reshard 127.0.0.1:6379</span><br><span class="line"></span><br><span class="line"><span class="comment"># 进行一系列校验后提示输入要迁移的槽的个数，输入4096</span></span><br><span class="line">How many slots <span class="keyword">do</span> you want to move (from 1 to 16384) 4069</span><br><span class="line"></span><br><span class="line"><span class="comment"># 接着会提示输入目标节点，也就是新加入的节点id</span></span><br><span class="line">what is the receiveing node ID ? ce5e60a517c8714d52b82d9e24b71d2f5a1868c4</span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后会提示输入源节点的ID，也就是说可以只转移部分节点的槽  </span></span><br><span class="line">Please enter all the <span class="built_in">source</span> node IDs.</span><br><span class="line">Type <span class="string">'all'</span> to use all the nodes as <span class="built_in">source</span> nodes <span class="keyword">for</span> the <span class="built_in">hash</span> slots.</span><br><span class="line">Type <span class="string">'done'</span> once you entered all the <span class="built_in">source</span> nodes IDs.</span><br><span class="line">Source node <span class="comment">#1: 24b9eea3f3797a68e33100dccfdbfc57693f7a4b</span></span><br><span class="line">Source node <span class="comment">#2: 07b085e9e9750e5d0c319f3c099d70acda84f6fb</span></span><br><span class="line">Source node <span class="comment">#3: 6e2da8e45d804b47fe599d121682e6a394c527ef</span></span><br><span class="line"><span class="comment"># redis会打印每个槽的迁移计划，会再确认一次，确认后会打印迁移过程，最后自动退出</span></span><br></pre></td></tr></table></figure>
+
+<p>从redis的输出就可以看出，redis的迁移过程是一个一个槽迁移的，槽迁移过程如下：<br><img src="https://upload-images.jianshu.io/upload_images/23765437-dabe08a42f58e424.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="槽迁移过程"></p>
+</li>
+<li><p>检查槽的均衡性  </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&gt; ./redis/src/redis-cli --cluster rebalance 127.0.0.1:6379</span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 127.0.0.1:6379)</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">*** No rebalancing needed! All nodes are within the 2.00% threshold.</span><br></pre></td></tr></table></figure>
+
+<p>说明迁移之后主节点负责的槽数量差异在2%以内，相对均匀，无需调整</p>
+</li>
+<li><p>添加从节点<br>准备一个6386节点，步骤与前面一样，然后在该节点上执行 <code>cluster replicate {masterId}</code>，注意集群模式下没有salveof命令</p>
+</li>
+</ol>
+<h3 id="集群收缩"><a href="#集群收缩" class="headerlink" title="集群收缩"></a>集群收缩</h3><p>原理和方法和扩容是一样的，都是重新分片reshard，只不过之前是把已有节点的数据迁移一部分到新节点。而收缩则是把要下线节点的数据迁移到其他节点。<br>执行方法与扩容一样，都是用reshard。 注意del-node是删除空节点的命令，如果有槽是不能删除的。  </p>
+<p>下线后，为了让其他节点忘记下线节点，也就是避免继续和下线节点交换信息，这个时候可以用del-node 命令。</p>
+<h2 id="请求路由"><a href="#请求路由" class="headerlink" title="请求路由"></a>请求路由</h2><p>在集群模式下，Redis接受任何键相关的命令都要先计算键对应的槽(每个集群节点在交换信息时都会发送槽信息，因此每个节点都知道所有槽和节点的对应关系)，再根据槽找出相应的节点，如果节点是自身，则处理命令，如果不是则恢复MOVED重定向错误。通知客户端请求正确的节点  </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6386&gt; <span class="built_in">set</span> key:<span class="built_in">test</span>:1 value-1</span><br><span class="line">(error) MOVED 5191 127.0.0.1:6380</span><br></pre></td></tr></table></figure>
+
+<p>使用redis-cli工具时，可以加入-c参数支持自动重定向，也就是不用手动切换节点。原理是redis-cli客户端再收到MOVED信息时，再次发起请求。<br><strong>redis节点对于不属于它的键命令，只会回复重定向响应，并不负责转发。重定向的过程由客户端实现</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./redis/src/redis-cli -p 6386 -c</span><br><span class="line">127.0.0.1:6386&gt; <span class="built_in">set</span> key:<span class="built_in">test</span>:1 value-1</span><br><span class="line">-&gt; Redirected to slot [5191] located at 127.0.0.1:6380</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果键内容包含{}大括号字符，则计算槽的有效部分是括号内的内容，其他内容不会被计算，如果不包含则所有内容都会加入计算，利用这一点我们可以优化批量数据，比如哈希类型的，我们如果使用hget的时候，如果键列表不再同一个槽中会报错，这个时候可以用hash_tag来使该哈希表中所有的键都在同一个槽中。</p>
+</blockquote>
+   <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">100.101.71.99:6380&gt; CLUSTER KEYSLOT key:<span class="built_in">test</span>:111</span><br><span class="line">(<span class="built_in">integer</span>) 10050</span><br><span class="line">100.101.71.99:6380&gt; CLUSTER KEYSLOT key:&#123;<span class="built_in">test</span>&#125;:111</span><br><span class="line">(<span class="built_in">integer</span>) 6918</span><br><span class="line">100.101.71.99:6380&gt; CLUSTER KEYSLOT key:&#123;<span class="built_in">test</span>&#125;:112</span><br><span class="line">(<span class="built_in">integer</span>) 6918</span><br><span class="line">100.101.71.99:6380&gt; CLUSTER KEYSLOT key:&#123;<span class="built_in">test</span>&#125;:22</span><br><span class="line">(<span class="built_in">integer</span>) 6918</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>ASK重定向<br>与MOVED重定向不一样，ASK重定向，是发生在槽迁移过程中，一部分迁移完成，一部分没有迁移成功，客户端根据本地slots缓存发送命令到源节点，但其实已经发送到了目标节点，因此会回复<code>(error)ASK {slot}{targetIP}:{targetIP}</code></li>
+</ul>
+<h3 id="Smart客户端"><a href="#Smart客户端" class="headerlink" title="Smart客户端"></a>Smart客户端</h3><p>显然每次通过重定向来完成操作，会造成很大的IO浪费。smart客户端则通过内部维护槽和节点的关系，本地就可以实现键和节点的查找。而MOVED重定向则只是协助客户端维护槽和节点之间的关系。</p>
+<ul>
+<li>jedis客户端</li>
+</ul>
+<p><img src="https://upload-images.jianshu.io/upload_images/23765437-d500d782b54b8bad.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Jedis客户端命令执行过程"></p>
+<h2 id="故障转移"><a href="#故障转移" class="headerlink" title="故障转移"></a>故障转移</h2><p>与哨兵模式一样，Redis集群模式也要解决分布式通用的部分失败的问题。</p>
+<ol>
+<li><p>故障发现<br>Redis集群内通过ping/pong消息实现节点通信，消息不止携带节点槽信息，还携带有其他状态，比如主从节点状态、节点故障灯。当集群内某个节点出现问题时，就会通过消息传播<br>与哨兵模式类似，存在主观下线和客观下线两种状态</p>
+<ul>
+<li><p>主观下线：每个节点都会定期向其他节点发送ping消息，如果节点在cluster-node-timetout时间内没有收到pong消息，则该发送节点，就会认为对端存在故障。把接受节点标记为主观下线状态(pfail)。</p>
+ <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">clusterState</span> &#123;</span></span><br><span class="line">clusterNode *myself; <span class="comment">/* 自身节点 /</span></span><br><span class="line"><span class="comment">dict *nodes;/* 当前集群内所有节点的字典集合，key为节点ID，value为对应节点ClusterNode结构 */</span></span><br><span class="line">...</span><br><span class="line">&#125; clusterState;字典nodes属性中的clusterNode结构保存了节点的状态,关键属性如下:</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">clusterNode</span> &#123;</span></span><br><span class="line"><span class="keyword">int</span> flags; <span class="comment">/* 当前节点状态,如:主从角色，是否下线等 */</span></span><br><span class="line"><span class="keyword">mstime_t</span> ping_sent; <span class="comment">/* 最后一次与该节点发送ping消息的时间 */</span></span><br><span class="line"><span class="keyword">mstime_t</span> pong_received; <span class="comment">/* 最后一次接收到该节点pong消息的时间 */</span></span><br><span class="line">...</span><br><span class="line">&#125; clusterNode;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>客观下线<br>当某个节点判断另一个节点主观下线后，相应的节点状态会跟随消息在集群内传播。当半数以上持有槽的主节点都标记某个节点是主观下线时，触发客观下线流程</p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="故障恢复"><a href="#故障恢复" class="headerlink" title="故障恢复"></a>故障恢复</h3><p>当故障节点变为客观下线后，如果下线节点是持有槽的主节点，则需要选择一个从节点来替换它，从而保证高可用。下线主节点的所有<strong>从节点</strong>承担故障恢复的义务。当从节点通过内部<br>定时任务发现主节点客观下线时，就会触发故障恢复流程：  </p>
+<ol>
+<li><p>资格检查<br>判断当前节点是否有资格替换主节点，判断依据是，从节点与主节点断线时间是否超过cluster-node-time*cluster-slave-validity-factor。如果超过则不具备3</p>
+</li>
+<li><p>准备选举时间<br>当从节点具备故障转移资格后，更新触发故障选举的时间，只有到达该时间后才能执行后续流程。这里之所以要采用延时触发机制，主要是多个从节点有不同的优先级，也就是根据他们的优先级来触发故障选举，优先级更高的更容易成为主节点，而优先级的判断就是通过offset(复制的偏移)。</p>
+</li>
+<li><p>发起选举<br>更新配置的epoch，每个主节点自身维护一个epoch表示当前主节点的版本，所有主节点的epoch都不相等，从节点会复制主节点的epoch。整个集群有一个最大的epoch，也就是集群epoch。epoch会随着消息的传递传播下去，<br>如果epoch相等，那么会根据nodeid大小来更新，nodeid更大的会使当前集群epoch递增，并且赋值给自己的epoch。每当新节点加入、槽节点映射冲突、从节点投票选举冲突时都会更新epoch。<br>更新后会在集群内广播选举消息(FAILOVER_AUTH_REQUEST)，并记录已发送过消息的状态。保证该节点在一个epoch只能发起一次选举。</p>
+</li>
+<li><p>选举投票<br>只有持有槽的主节点才会处理故障选举消息，也就是上面说的REQUET，在选举过程中每个节点在同一个epoch中只有一张选票，当收到第一个从节点消息是，就会回复ACK消息投出自己的选票，之后不会再响应选举请求。<br>最终收到投票数大于一般的从节点会成为主节点。</p>
+</li>
+<li><p>替换主节点<br>当从节点收到足够多的选票后，触发替换主节点操作：</p>
+<ol>
+<li>取消复制，成为主节点</li>
+<li>执行clusterDelSlot操作，撤销故障节点负责的槽，并执行clusterAddSlot把这些槽委派给自己</li>
+<li>向集群广播自己的pong消息。通知其他节点更新信息。</li>
+</ol>
+</li>
+<li><p>故障转移时间  </p>
+<ul>
+<li>主观下线识别时间=cluster-node-timeout</li>
+<li>传播时间&lt;=cluster-node-timeout/2</li>
+<li>从节点转移时间&lt;=1000毫秒</li>
+</ul>
+</li>
+<li><p>模拟故障转移：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 主节点日志</span></span><br><span class="line">128026:M 28 Jan 2021 19:56:59.247 * Clear FAIL state <span class="keyword">for</span> node 4aa937577181f82ce88b1c909a519ca03963ab21: is reachable again and nobody is serving its slots after some time.</span><br><span class="line">128026:M 28 Jan 2021 19:56:59.247 <span class="comment"># Cluster state changed: ok</span></span><br><span class="line">128026:M 28 Jan 2021 19:58:38.299 * Marking node 4aa937577181f82ce88b1c909a519ca03963ab21 as failing (quorum reached).</span><br><span class="line">128026:M 28 Jan 2021 19:58:38.299 <span class="comment"># Cluster state changed: fail</span></span><br><span class="line">128026:M 28 Jan 2021 19:58:38.809 <span class="comment"># Failover auth granted to 4885dcbd061e28d969eb8d2ae893f256c9c79401 for epoch 9</span></span><br><span class="line">128026:M 28 Jan 2021 19:58:38.848 <span class="comment"># Cluster state changed: ok</span></span><br><span class="line">128026:M 28 Jan 2021 19:58:45.127 * Clear FAIL state <span class="keyword">for</span> node 4aa937577181f82ce88b1c909a519ca03963ab21: master without slots is reachable again.</span><br><span class="line"></span><br><span class="line"><span class="comment"># 从节点日志</span></span><br><span class="line">128093:S 28 Jan 2021 19:58:38.805 <span class="comment"># Starting a failover election for epoch 9.</span></span><br><span class="line">128093:S 28 Jan 2021 19:58:38.812 <span class="comment"># Failover election won: I'm the new master.</span></span><br><span class="line">128093:S 28 Jan 2021 19:58:38.812 <span class="comment"># configEpoch set to 9 after successful failover</span></span><br><span class="line">128093:M 28 Jan 2021 19:58:38.812 <span class="comment"># Setting secondary replication ID to 2609636bd51ab7c2e436ee5653a8bf8a7445eefa, valid up to offset: 113. New replication ID is 3231e43113314a13c4878d95263a718da8fb305d</span></span><br><span class="line">128093:M 28 Jan 2021 19:58:38.812 * Discarding previously cached master state.</span><br><span class="line">128093:M 28 Jan 2021 19:58:38.812 <span class="comment"># Cluster state changed: ok</span></span><br><span class="line">128093:M 28 Jan 2021 19:58:45.128 * Clear FAIL state <span class="keyword">for</span> node 4aa937577181f82ce88b1c909a519ca03963ab21: master without slots is reachable again.</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="集群运维"><a href="#集群运维" class="headerlink" title="集群运维"></a>集群运维</h2><ol>
+<li><p>集群完整性<br>默认情况下当集群16384个槽任何一个没有指派到节点上，则执行任何明林过度会报错。这是对集群的一种保护，但当主节点下线时，从故障发现到完成转移这个过程，整个集群时不可用状态的，很多业务场景无法容忍这种情况<br>因此可以将参数cluster-require-full-coverage配置为no，当主节点故障时，只影响它负责槽的相关命令执行，不会影响其他节点。</p>
+</li>
+<li><p>带宽消耗<br>官方建议规模在1000以内，不然会造成大量网络带宽，2适当提交cluster-node-timeout降低消息发送频率、3尽量均匀的部署节点。</p>
+</li>
+<li><p>Pub/Sub广播问题<br>尽量使用sentinel模式使用广播，集群模式会造成消息在所有节点广播一遍，加重带宽负担。</p>
+</li>
+<li><p>集群倾斜  </p>
+<ul>
+<li>节点和槽分配不均，可以使用rebalance命令，进行平衡</li>
+<li>不同槽对应键数量差异过大，一般使用CRC16哈希算法会相对均匀，但如果大量使用hash_tag时，就会产生多个键映射到同一个槽的情况。</li>
+<li>集合对象包含大量元素，可以通过redis-cli bigkeys命令识别</li>
+<li>内存配置不一致</li>
+</ul>
+</li>
+<li><p>手动故障转移<br>Redis提供了手动故障转移功能，比如需要切换设备，重新调整部署方案的时候，可能会用到（直接kill会导致一定时间的不可用）。使用cluster failover命令</p>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/redis-cluster/" rel="tag"># redis cluster</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2021/01/12/redis%E4%B8%93%E9%A2%98/%E5%85%AB%E3%80%81redis%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F/" rel="next" title="八、redis哨兵模式">
+                <i class="fa fa-chevron-left"></i> 八、redis哨兵模式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2021/01/16/redis%E4%B8%93%E9%A2%98/%E5%8D%81%E3%80%81redis%E7%BC%93%E5%AD%98%E8%AE%BE%E8%AE%A1/" rel="prev" title="十、redis缓存设计">
+                十、redis缓存设计 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#redis集群数据分区"><span class="nav-number">1.</span> <span class="nav-text">redis集群数据分区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群搭建"><span class="nav-number">2.</span> <span class="nav-text">集群搭建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#手动建立集群"><span class="nav-number">2.1.</span> <span class="nav-text">手动建立集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#利用cluster-create快速搭建集群"><span class="nav-number">2.2.</span> <span class="nav-text">利用cluster create快速搭建集群</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群内通信"><span class="nav-number">3.</span> <span class="nav-text">集群内通信</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群伸缩"><span class="nav-number">4.</span> <span class="nav-text">集群伸缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#扩容"><span class="nav-number">4.1.</span> <span class="nav-text">扩容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#集群收缩"><span class="nav-number">4.2.</span> <span class="nav-text">集群收缩</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#请求路由"><span class="nav-number">5.</span> <span class="nav-text">请求路由</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Smart客户端"><span class="nav-number">5.1.</span> <span class="nav-text">Smart客户端</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#故障转移"><span class="nav-number">6.</span> <span class="nav-text">故障转移</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#故障恢复"><span class="nav-number">6.1.</span> <span class="nav-text">故障恢复</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群运维"><span class="nav-number">7.</span> <span class="nav-text">集群运维</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

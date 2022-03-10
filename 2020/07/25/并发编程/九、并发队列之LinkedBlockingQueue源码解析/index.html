@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="LinkedBlockingQueue," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="之前我们已经了解过双向同步队列了，LinkedBlockingQueu有一点不同，使用了两把锁，所以相对也更复杂一点">
+<meta property="og:type" content="article">
+<meta property="og:title" content="九、并发队列之LinkedBlockingQueue源码解析">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/07/25/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%B9%9D%E3%80%81%E5%B9%B6%E5%8F%91%E9%98%9F%E5%88%97%E4%B9%8BLinkedBlockingQueue%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="之前我们已经了解过双向同步队列了，LinkedBlockingQueu有一点不同，使用了两把锁，所以相对也更复杂一点">
+<meta property="article:published_time" content="2020-07-25T13:14:25.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:18:09.092Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="LinkedBlockingQueue">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/07/25/并发编程/九、并发队列之LinkedBlockingQueue源码解析/"/>
+
+
+
+
+
+  <title>九、并发队列之LinkedBlockingQueue源码解析 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/07/25/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%B9%9D%E3%80%81%E5%B9%B6%E5%8F%91%E9%98%9F%E5%88%97%E4%B9%8BLinkedBlockingQueue%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">九、并发队列之LinkedBlockingQueue源码解析</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-07-25T21:14:25+08:00">
+                2020-07-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index">
+                    <span itemprop="name">并发编程</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  之前我们已经了解过双向同步队列了，LinkedBlockingQueu有一点不同，使用了两把锁，所以相对也更复杂一点
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="类结构"><a href="#类结构" class="headerlink" title="类结构"></a>类结构</h1><p>我们依然是线看其整个类内部机构:</p>
+<ul>
+<li>final int capacity;       // 队列的容量</li>
+<li>final AtomicInteger count = new AtomicInteger();   // 当前元素的数量</li>
+<li>Node<E> head;   // 头结点</li>
+<li>Node<E> last;   // 尾节点</li>
+<li>ReentrantLock takeLock = new ReentrantLock();     // 出队锁</li>
+<li>Condition notEmpty = takeLock.newCondition();     // 出队条件变量</li>
+<li>ReentrantLock putLock = new ReentrantLock();      // 入队锁</li>
+<li>Condition notFull = putLock.newCondition();       // 入队条件变量  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">static class Node&lt;E&gt; &#123;   &#x2F;&#x2F; 就是一个单向链表</span><br><span class="line">    E item;</span><br><span class="line">    Node&lt;E&gt; next;</span><br><span class="line">    Node(E x) &#123; item &#x3D; x; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+由上可以LinkedBlockingQueue使用了两把锁，为什么这么做呢，为何不像双向队列那样只使用一把锁两个条件变量呢？<br>我们带着疑问往下看。  </li>
+</ul>
+<h2 id="方法介绍"><a href="#方法介绍" class="headerlink" title="方法介绍"></a>方法介绍</h2><p>和双向队列一样，只要是队列，离不开offer、poll、peek这几个重要方法。</p>
+<h3 id="入队"><a href="#入队" class="headerlink" title="入队"></a>入队</h3><p>其入队操作也有两种put、offer、add </p>
+<ul>
+<li>offer  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">public boolean offer(E e) &#123;</span><br><span class="line">    if (e &#x3D;&#x3D; null) throw new NullPointerException();</span><br><span class="line">    final AtomicInteger count &#x3D; this.count;</span><br><span class="line">    if (count.get() &#x3D;&#x3D; capacity)</span><br><span class="line">        return false;</span><br><span class="line">    int c &#x3D; -1;</span><br><span class="line">    Node&lt;E&gt; node &#x3D; new Node&lt;E&gt;(e);</span><br><span class="line">    final ReentrantLock putLock &#x3D; this.putLock;</span><br><span class="line">    putLock.lock();         &#x2F;&#x2F; 获取到锁，其他入队操作将被阻塞</span><br><span class="line">    try &#123;</span><br><span class="line">        if (count.get() &lt; capacity) &#123;</span><br><span class="line">            enqueue(node);          &#x2F;&#x2F; 未满则加入队列</span><br><span class="line">            c &#x3D; count.getAndIncrement();    &#x2F;&#x2F; 并增加队列数量</span><br><span class="line">            if (c + 1 &lt; capacity)</span><br><span class="line">                notFull.signal();       &#x2F;&#x2F; 如果还没满，继续唤醒其他入队线程</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        putLock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    if (c &#x3D;&#x3D; 0)</span><br><span class="line">        signalNotEmpty();   &#x2F;&#x2F; c&#x3D;&#x3D;0说明之前队列时空的，那么入队之后就不空了，因此唤醒出队线程，但为什么是&#x3D;&#x3D;0,而不是&gt;&#x3D; 0呢？</span><br><span class="line">    return c &gt;&#x3D; 0;</span><br><span class="line">&#125;</span><br><span class="line">public boolean add(E e) &#123;   &#x2F;&#x2F; add 方法继承自父类，调用的是offer方法</span><br><span class="line">    if (offer(e))</span><br><span class="line">        return true;</span><br><span class="line">    else</span><br><span class="line">        throw new IllegalStateException(&quot;Queue full&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>put  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public void put(E e) throws InterruptedException &#123;</span><br><span class="line">    if (e &#x3D;&#x3D; null) throw new NullPointerException();</span><br><span class="line">    int c &#x3D; -1;</span><br><span class="line">    Node&lt;E&gt; node &#x3D; new Node&lt;E&gt;(e);</span><br><span class="line">    final ReentrantLock putLock &#x3D; this.putLock;</span><br><span class="line">    final AtomicInteger count &#x3D; this.count;</span><br><span class="line">    putLock.lockInterruptibly();  &#x2F;&#x2F; 响应中断</span><br><span class="line">    try &#123;</span><br><span class="line">        while (count.get() &#x3D;&#x3D; capacity) &#123;  &#x2F;&#x2F; 已经满了，则等待直到可以入队</span><br><span class="line">            notFull.await();</span><br><span class="line">        &#125;</span><br><span class="line">        enqueue(node);          &#x2F;&#x2F; 入队</span><br><span class="line">        c &#x3D; count.getAndIncrement();</span><br><span class="line">        if (c + 1 &lt; capacity)</span><br><span class="line">            notFull.signal();</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        putLock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    if (c &#x3D;&#x3D; 0)</span><br><span class="line">        signalNotEmpty();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+上面代码要点：</li>
+</ul>
+<ol>
+<li>入队操作使用 putLock锁，也就是说不不会阻塞出队操作</li>
+<li>入队成功且如果队列还是未满，则释放之前因为队列满了而阻塞的入队线程</li>
+<li>put和offer的区别之一：put操作是一个阻塞操作，如果队列满则会等待直到可以插入，所以put的返回值是void永不失败，而offer的返回值是boolean，可能因为队列满了而失败</li>
+<li>put和offer的区别之二：put会响应中断</li>
+<li>回到上面那个问题，为什么c==0 的时候才唤醒出队线程呢？<blockquote>
+<p>这是因为如果c=0，则表示在这次入队之前队列时空的，那么所有的出队操作都将被阻塞。这个时候需要入队线程来唤醒。那么为什么c&gt;0的时候不唤醒？其实这个问题我们应该抛开之前讲过的双向队列的思路，LinkedBlockingDeque是使用一个锁同时控制读写，所以读写互相通知，但这里不一样，用了两把锁。再往上看代码notFull.signal(),发现了吗，写线程会通知写线程。这就会大大提升性能，读和写互补干扰，只有在队列为空，或者队列满时才有交流。  </p>
+</blockquote>
+</li>
+</ol>
+<p>可以看出put和offer的不同之处在于，put是一定会成功的，而offer则因为队列满了而失败。</p>
+<h3 id="出队"><a href="#出队" class="headerlink" title="出队"></a>出队</h3><p>同入队方式相对应也有三种方式poll、take、remove，remove也是父类的方法，调用的是子类的poll方法。</p>
+<ul>
+<li>poll  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">public E poll() &#123;</span><br><span class="line">    final AtomicInteger count &#x3D; this.count;</span><br><span class="line">    if (count.get() &#x3D;&#x3D; 0)           &#x2F;&#x2F; 如果队列为空，返回null</span><br><span class="line">        return null;</span><br><span class="line">    E x &#x3D; null;</span><br><span class="line">    int c &#x3D; -1;</span><br><span class="line">    final ReentrantLock takeLock &#x3D; this.takeLock;</span><br><span class="line">    takeLock.lock();</span><br><span class="line">    try &#123;</span><br><span class="line">        if (count.get() &gt; 0) &#123;</span><br><span class="line">            x &#x3D; dequeue();  &#x2F;&#x2F; 出队</span><br><span class="line">            c &#x3D; count.getAndDecrement();</span><br><span class="line">            if (c &gt; 1)</span><br><span class="line">                notEmpty.signal();  &#x2F;&#x2F; 通知下一个出队线程</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        takeLock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    if (c &#x3D;&#x3D; capacity)</span><br><span class="line">        signalNotFull();        &#x2F;&#x2F; 如果之前满了，则释放一个入队操作。</span><br><span class="line">    return x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+take()方法与put方法类似，相对poll，会阻塞直到成功，不会返回null，且响应中断。代码这里不再展示<h3 id="获取元素"><a href="#获取元素" class="headerlink" title="获取元素"></a>获取元素</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">public E peek() &#123;</span><br><span class="line">    if (count.get() &#x3D;&#x3D; 0)</span><br><span class="line">        return null;</span><br><span class="line">    final ReentrantLock takeLock &#x3D; this.takeLock;</span><br><span class="line">    takeLock.lock();</span><br><span class="line">    try &#123;</span><br><span class="line">        Node&lt;E&gt; first &#x3D; head.next;</span><br><span class="line">        if (first &#x3D;&#x3D; null)</span><br><span class="line">            return null;</span><br><span class="line">        else</span><br><span class="line">            return first.item;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        takeLock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+从代码可以看出逻辑非常简单，就是takelock来实现并发阻塞出队操作。<h3 id="其他方法"><a href="#其他方法" class="headerlink" title="其他方法"></a>其他方法</h3></li>
+<li>size  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public int size() &#123;</span><br><span class="line">    return count.get(); &#x2F;&#x2F; 这是一个原子类，所以是一个精确值</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>contains<pre><code>public boolean contains(Object o) {
+    if (o == null) return false;
+    fullyLock();        // 读写锁同时锁住，所以也是一个精确值
+    try {
+        for (Node&lt;E&gt; p = head.next; p != null; p = p.next)
+            if (o.equals(p.item))
+                return true;
+        return false;
+    } finally {
+        fullyUnlock();
+    }
+}</code></pre></li>
+</ul>
+<p>将这两个函数，主要是与ConcurrentLinkedQueue作对比，ConcurrentLinkedQueue采用的非阻塞的方式实现了入队出队的操作，但其size()和contains()方法并没有实现同步，因此不精确，但是入队出队的效率更高。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/LinkedBlockingQueue/" rel="tag"># LinkedBlockingQueue</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/07/23/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E5%85%AB%E3%80%81%E5%B9%B6%E5%8F%91%E9%98%9F%E5%88%97%E4%B9%8BLinkedBlockingDeque%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" rel="next" title="七、并发队列之ConcurrentLinkedQueue源码分析">
+                <i class="fa fa-chevron-left"></i> 七、并发队列之ConcurrentLinkedQueue源码分析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/07/26/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E5%8D%81%E3%80%81%E5%B9%B6%E5%8F%91%E9%98%9F%E5%88%97%E4%B9%8BArrayBlockingQueue%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" rel="prev" title="十、并发队列之ArrayBlockingQueue源码解析">
+                十、并发队列之ArrayBlockingQueue源码解析 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#类结构"><span class="nav-number">1.</span> <span class="nav-text">类结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#方法介绍"><span class="nav-number">1.1.</span> <span class="nav-text">方法介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#入队"><span class="nav-number">1.1.1.</span> <span class="nav-text">入队</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#出队"><span class="nav-number">1.1.2.</span> <span class="nav-text">出队</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取元素"><span class="nav-number">1.1.3.</span> <span class="nav-text">获取元素</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他方法"><span class="nav-number">1.1.4.</span> <span class="nav-text">其他方法</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

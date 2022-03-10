@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/daodaoplay/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/daodaoplay/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/daodaoplay/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/daodaoplay/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/daodaoplay/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/daodaoplay/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/daodaoplay/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="slowlog,pipeline,lua脚本," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="除了基本的五种数据结构提供的功能以外，redis还提供了其他的功能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二、redis高级技巧">
+<meta property="og:url" content="https://chenqiongxm.gitlab.io/daodaoplay/2020/10/18/redis%E4%B8%93%E9%A2%98/%E4%BA%8C%E3%80%81redis%E9%AB%98%E7%BA%A7%E6%8A%80%E5%B7%A7/index.html">
+<meta property="og:site_name" content="刀刀的博客">
+<meta property="og:description" content="除了基本的五种数据结构提供的功能以外，redis还提供了其他的功能">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/23765437-15f2d7b0ea7a92e7.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="article:published_time" content="2020-10-18T11:00:39.000Z">
+<meta property="article:modified_time" content="2021-02-08T14:43:45.014Z">
+<meta property="article:author" content="Chen Q">
+<meta property="article:tag" content="slowlog">
+<meta property="article:tag" content="pipeline">
+<meta property="article:tag" content="lua脚本">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/23765437-15f2d7b0ea7a92e7.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/daodaoplay/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://chenqiongxm.gitlab.io/daodaoplay/2020/10/18/redis专题/二、redis高级技巧/"/>
+
+
+
+
+
+  <title>二、redis高级技巧 | 刀刀的博客</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/daodaoplay/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">刀刀的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Talk is cheap. Show me the code</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/daodaoplay/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/daodaoplay/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/daodaoplay/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://chenqiongxm.gitlab.io/daodaoplay/daodaoplay/2020/10/18/redis%E4%B8%93%E9%A2%98/%E4%BA%8C%E3%80%81redis%E9%AB%98%E7%BA%A7%E6%8A%80%E5%B7%A7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Chen Q">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/daodaoplay/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刀刀的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">二、redis高级技巧</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-10-18T19:00:39+08:00">
+                2020-10-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/daodaoplay/categories/redis%E4%B8%93%E9%A2%98/" itemprop="url" rel="index">
+                    <span itemprop="name">redis专题</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  除了基本的五种数据结构提供的功能以外，redis还提供了其他的功能
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="慢查询分析"><a href="#慢查询分析" class="headerlink" title="慢查询分析"></a>慢查询分析</h2><p>类似关系性数据库，redis也有机制来保存和查看慢查询</p>
+<ol>
+<li>预设值 slowlog-log-slower-than<br>如果比这个值大，则会记录日志，默认值时10000，可以通过<code>config get slowlog-log-slower-than</code>命令获取</li>
+<li>日志存储 slowlog-max-len<br>同普通数据一样，慢查询日志也是存在内存当中，是一个先进先出的队列，而slowlog-max-len这个值，代表的就是该日志队列的长度的长度。同样可以通过<code>CONFIG get slowlog-max-len</code>,默认是128</li>
+<li>查询慢查询日志 slowlog subcommand [arg]<br>可以获取该条慢查询的id、时间戳、命令耗时和命令内容</li>
+</ol>
+<h2 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h2><p>Pipeline机制能让一组Redis的命令，通过一次RTT传输到服务器，并将结果按顺序返回给客户端，在网络延时较大时，提升性能非常明显。因为很多情况下，redis的性能瓶颈都在网络上。  </p>
+<p>与原生批量命令如mset、hmset、hmget有以下不同：</p>
+<ul>
+<li>原生批量命令是原子的，而pipepline不是</li>
+<li>原生批量命令一般都是多个不同的key，而pipeline不是</li>
+<li>原生批量命令是服务端支持的，而pipeline是客户端和服务端之间的</li>
+</ul>
+<h2 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h2><p>同关系型数据类似，redis也支持事务，事务的写法如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">multi</span><br><span class="line"><span class="built_in">command</span> arg</span><br><span class="line">...</span><br><span class="line"><span class="built_in">exec</span> <span class="comment"># 如果要取消，则使用discard来替换</span></span><br></pre></td></tr></table></figure>
+
+<p>错误处理：</p>
+<ol>
+<li><p>命令错误，例如set写成了sett，那么整个事务无法提交</p>
+</li>
+<li><p>运行时错误，例如sadd，写成了zadd，语法没有错，但运行时报错。这种场景会提交正确的命令，不支持回滚</p>
+</li>
+<li><p>对于事务过程中，其他客户端导致的修改，可以使用watch机制来抛弃这次事务，有点类似java中的CAS：</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> key java</span><br><span class="line"><span class="comment">#客户端1</span></span><br><span class="line">watch key</span><br><span class="line">multi</span><br><span class="line">append key python</span><br><span class="line"><span class="comment">#客户端2</span></span><br><span class="line">append key jedis</span><br><span class="line"><span class="comment">#客户端1</span></span><br><span class="line"><span class="built_in">exec</span></span><br><span class="line">(nil) <span class="comment"># 也就是提交失败</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>缺点不支持回滚，不过不会滚会带来以下好处</p>
+<ul>
+<li>仅当使用错误的语法（并且在命令队列期间无法检测到该问题）或针对包含错误数据类型的键调用Redis命令时，该命令才能失败：这实际上意味着失败的命令是编程错误的结果， 以及一种很可能在开发过程中而不是生产过程中发现的错误。也就是说这种错误需要我们从程序中改</li>
+<li>Redis在内部得到了简化和更快，因为它不需要回滚的能力</li>
+</ul>
+</li>
+</ol>
+<h2 id="Lua脚本"><a href="#Lua脚本" class="headerlink" title="Lua脚本"></a>Lua脚本</h2><ol>
+<li><p><a href="https://www.runoob.com/lua/lua-basic-syntax.html" target="_blank" rel="noopener">基本语法</a></p>
+</li>
+<li><p>redis中使用Lua</p>
+<ul>
+<li><p>在客户端中使用eval命令</p>
+  <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># eval [脚本内容]  [key的个数]  [key列表]  [参数列表]</span></span><br><span class="line"><span class="built_in">eval</span> <span class="string">'return "hello" .. KEYS[1]..ARGV[1]'</span> 1 redis world</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>redis-cli --eval</code> 直接执行文件，该方法本质和eval是一样的，过程如下<br> <img src="https://upload-images.jianshu.io/upload_images/23765437-15f2d7b0ea7a92e7.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="eval命令执行Lua脚本过程.PNG"></p>
+</li>
+<li><p>evalsha 除了以上方法，也可以使用evalsha将脚本加载在内存当中，以键值对的方式存储，其中key为脚本的SHA1校验值，value就是脚本。</p>
+  <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">redis-cli script load <span class="string">"$ cat lua_get.lua"</span></span><br><span class="line"><span class="string">"a4eb97a51a5fd626ad3966923fa44190a2283cbb"</span> <span class="comment"># 返回sha1值</span></span><br><span class="line"><span class="comment"># evalsha [脚本sha1值]  [key的个数]  [key列表]  [参数列表]</span></span><br><span class="line">evalsha a4eb97a51a5fd626ad3966923fa44190a2283cbb 1 redis world</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Lua在调用的时候可以反过来通过redis.call() ,实现对redis访问</p>
+</li>
+<li><p>Lua脚本在redsi中是原子执行的，我们可以利用Lua脚本来定制功能，并常驻在redis内存中。</p>
+</li>
+</ul>
+</li>
+<li><p>redis管理Lua脚本</p>
+<ul>
+<li>script load 加载脚本</li>
+<li>script exists 判断是否存在sha1</li>
+<li>script flush 用于清除redis已加载的Lua脚本</li>
+<li>script kill 停止正在执行的Lua脚本，在耗时较长或脚本存在问题时很有用，但如果脚本正在写，则不会kill</li>
+</ul>
+</li>
+</ol>
+<h2 id="HyperLogLog"><a href="#HyperLogLog" class="headerlink" title="HyperLogLog"></a>HyperLogLog</h2><p>HyperLogLog不是一种新的数据结构（实际结构是字符串），而是一种基数算法，它可以实现用极小的内存空间完成独立总数的统计。</p>
+<ul>
+<li><p>什么叫独立总数统计<br>  类似数据库中的distinct 关键字，也就是去重后的总数，这种情形使用计数器是无法做到的，但如果用set这种数据结构，则会占用大量内存。</p>
+</li>
+<li><p>用途：只为了计算独立总数，不需要获取单条数据源</p>
+</li>
+<li><p>缺点：会有一定的误差（官方统计是0.81%），所以需要容忍一定的误差率。</p>
+</li>
+<li><p>三个命令：</p>
+<ul>
+<li>PFADD key element[element],添加一个数据  e.g pfadd user user1 user2 user3</li>
+<li>pfcount 统计独立总数</li>
+<li>pfmerge destkey sourcekey[…],将多个HyperLogLog合并</li>
+</ul>
+</li>
+</ul>
+<h2 id="发布订阅"><a href="#发布订阅" class="headerlink" title="发布订阅"></a>发布订阅</h2><p>redis的消息发布，就是传统的发布/订阅模型，生产者产生消息到服务端，然后服务端会通知订阅了这个channel的订阅者。</p>
+<ol>
+<li><p>发布 publish channel message</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; publish channel:<span class="built_in">test</span> <span class="string">"i am test message"</span></span><br><span class="line">(<span class="built_in">integer</span>) 0  <span class="comment">#返回0 代表没有观察者</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>消息订阅 subscribe channel […] 订阅一个或多个channel</p>
+ <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#1. 客户端1 订阅该channel</span></span><br><span class="line">SUBSCRIBE channel:<span class="built_in">test</span></span><br><span class="line">Reading messages... (press Ctrl-C to quit)</span><br><span class="line">1) <span class="string">"subscribe"</span></span><br><span class="line">2) <span class="string">"channel:test"</span></span><br><span class="line">3) (<span class="built_in">integer</span>) 1</span><br><span class="line"><span class="comment">#2. 客户端2 发布消息到该channel</span></span><br><span class="line">127.0.0.1:6379&gt; publish channel:<span class="built_in">test</span> <span class="string">"i am test message2"</span></span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"><span class="comment">#3. 客户端1 收到通知</span></span><br><span class="line">1) <span class="string">"message"</span></span><br><span class="line">2) <span class="string">"channel:test"</span></span><br><span class="line">3) <span class="string">"i am test message2"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>取消订阅 unsubscribe [channel]<br>取消之后就不再收到该channel发送的消息，另外再redis-cli客户端中我们无法执行这个命令，ctrl-c会退出该客户端，因此可以采用java客户端jedis来测试</p>
+</li>
+<li><p>按照channel匹配模式来订阅或者取消 psubscribe pattern […]</p>
+</li>
+<li><p>查询订阅 </p>
+<ul>
+<li>查看活跃的channel，也就是有订阅客户端的channel： pubsub channels [pattern]</li>
+<li>查看channel的订阅客户端数： pubsub numsub [channel …]</li>
+</ul>
+</li>
+</ol>
+<p><strong>缺陷</strong>：<br>redis的发布订阅模型相对专业的消息队列如kafka、RocketMQ比较简单，不支持消息的持久化，也就是无法重复消费，或者回溯消息以及其他高级功能。</p>
+<h2 id="GEO"><a href="#GEO" class="headerlink" title="GEO"></a>GEO</h2><p>地理位置，支持存储地理位置信息来实现一些功能。</p>
+<ol>
+<li>增加地理位置信息geoadd,结果返回成功的个数，如果已存在或者只是修改，返回0</li>
+<li>获取地理位置信息geopos</li>
+<li>获取两个地理位置之间的距离geodist</li>
+<li>返回指定范围内的地理位置集合georadius和georadiusbymemeber，一个使用的地理位置值，一个是用成员</li>
+<li>获取地理位置信息的hash值，hash值越长，代表越精确</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#geoadd key longitude latitude memeber [...other]</span></span><br><span class="line"><span class="comment"># 添加北京和天津的地理位置</span></span><br><span class="line">127.0.0.1:6379&gt; GEOADD cities:location 116.28 39.55 beijing</span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line">127.0.0.1:6379&gt; GEOPOS cities:location beijing</span><br><span class="line">1) 1) <span class="string">"116.28000229597091675"</span></span><br><span class="line">   2) <span class="string">"39.5500007245470826"</span></span><br><span class="line">127.0.0.1:6379&gt; GEOADD cities:location 114.29 38.02 tianjing</span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br><span class="line"></span><br><span class="line"><span class="comment">#计算两者之间的距离</span></span><br><span class="line">127.0.0.1:6379&gt; geodist cities:location beijing tianjing</span><br><span class="line"><span class="string">"242326.2997"</span></span><br><span class="line"><span class="comment"># 求出指定坐标下，指定半径内的城市</span></span><br><span class="line">127.0.0.1:6379&gt; GEORADIUS cities:location 120.5 39.3 1000 km</span><br><span class="line">1) <span class="string">"tianjing"</span></span><br><span class="line">2) <span class="string">"beijing"</span></span><br><span class="line"><span class="comment"># 求出指定城市下，指定半径内的城市</span></span><br><span class="line">127.0.0.1:6379&gt; GEORADIUSBYMEMBER cities:location beijing 300 km</span><br><span class="line">1) <span class="string">"tianjing"</span></span><br><span class="line">2) <span class="string">"beijing"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取hash值</span></span><br><span class="line">127.0.0.1:6379&gt; GEOHASH cities:location beijing tianjing</span><br><span class="line">1) <span class="string">"wx48ypbe2q0"</span></span><br><span class="line">2) <span class="string">"wwc229r6w10"</span></span><br></pre></td></tr></table></figure>
+
+<p>geo利用的是有序列表（sorted set）这种结构，并结合geohash的一些特性来实现。我们可以尝试用zXXX命令来查看</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; ZRANGE cities:location 0 -1</span><br><span class="line">1) <span class="string">"tianjing"</span></span><br><span class="line">2) <span class="string">"beijing"</span></span><br><span class="line">127.0.0.1:6379&gt; </span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除</span></span><br><span class="line">127.0.0.1:6379&gt; ZREM cities:location beijing</span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br></pre></td></tr></table></figure>
+
+<h2 id="redis-自带的shell脚本"><a href="#redis-自带的shell脚本" class="headerlink" title="redis 自带的shell脚本"></a>redis 自带的shell脚本</h2><p>redis提供了redis-cli、redis-server等工具脚本。有时候很有用</p>
+<ol>
+<li><p>redis-cli<br>使用redis-cli –help 获取使用指南</p>
+<ul>
+<li>-r 重复执行命令多次 ./redis-cli -r 3 incr count</li>
+<li>-i 每隔几秒执行一次，和-r参数一起使用</li>
+<li>-x 读取数据作为最后一个参数你。echo “world” | redis-cli -x set hello</li>
+<li>-a (auth),如果配置了密码，需要鉴权</li>
+<li>–slave，将客户端模拟redis的从节点</li>
+<li>–bigkeys 查看大对象</li>
+</ul>
+</li>
+<li><p>redis-server，有个–test-memory 的参数，检测是否有足够内存</p>
+</li>
+<li><p>redis-benchmark,提供了很多性能测试</p>
+<ul>
+<li>-c 表示客户端的并发数量（client，默认是50）</li>
+<li>-n nums代表客户端请求总量 </li>
+<li>-q 仅显示每秒请求的数量，也就是简要信息</li>
+<li>-r 随机向redis插入更多的键值对</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/daodaoplay/tags/slowlog/" rel="tag"># slowlog</a>
+          
+            <a href="/daodaoplay/tags/pipeline/" rel="tag"># pipeline</a>
+          
+            <a href="/daodaoplay/tags/lua%E8%84%9A%E6%9C%AC/" rel="tag"># lua脚本</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/daodaoplay/2020/10/17/redis%E4%B8%93%E9%A2%98/%E4%B8%80%E3%80%81redis%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8/" rel="next" title="一、redis快速入门">
+                <i class="fa fa-chevron-left"></i> 一、redis快速入门
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/daodaoplay/2020/11/20/redis%E4%B8%93%E9%A2%98/%E4%B8%89%E3%80%81redis%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%AE%A1%E7%90%86/" rel="prev" title="三、redis客户端管理">
+                三、redis客户端管理 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/daodaoplay/images/avatar.gif"
+                alt="Chen Q" />
+            
+              <p class="site-author-name" itemprop="name">Chen Q</p>
+              <p class="site-description motion-element" itemprop="description">记录日常生活和技术文档</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/daodaoplay/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">41</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/daodaoplay/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/cq1228" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/06332ba033db" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-heartbeat"></i>简书</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#慢查询分析"><span class="nav-number">1.</span> <span class="nav-text">慢查询分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pipeline"><span class="nav-number">2.</span> <span class="nav-text">pipeline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#事务"><span class="nav-number">3.</span> <span class="nav-text">事务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Lua脚本"><span class="nav-number">4.</span> <span class="nav-text">Lua脚本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HyperLogLog"><span class="nav-number">5.</span> <span class="nav-text">HyperLogLog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#发布订阅"><span class="nav-number">6.</span> <span class="nav-text">发布订阅</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GEO"><span class="nav-number">7.</span> <span class="nav-text">GEO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#redis-自带的shell脚本"><span class="nav-number">8.</span> <span class="nav-text">redis 自带的shell脚本</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Chen Q</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/daodaoplay/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/daodaoplay/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/daodaoplay/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/daodaoplay/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/daodaoplay/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
